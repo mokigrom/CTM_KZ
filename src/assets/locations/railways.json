@@ -1,5 +1,21 @@
 [
     {
+        "id": "aktobe-1",
+        "name": "Актобе-1",
+        "coordinates": {
+            "lng": 57.2142,
+            "lat": 50.2808
+        }
+    },
+    {
+        "id": "aktogay-1",
+        "name": "Актогай-1",
+        "coordinates": {
+            "lng": 79.6817,
+            "lat": 46.9533
+        }
+    },
+    {
         "id": "almaty-1",
         "name": "Алматы-1",
         "coordinates": {
@@ -16,6 +32,22 @@
         }
     },
     {
+        "id": "altynkol-1",
+        "name": "Алтынколь",
+        "coordinates": {
+            "lng": 80.2951,
+            "lat": 44.1647
+        }
+    },
+    {
+        "id": "arkalyk",
+        "name": "Аркалык",
+        "coordinates": {
+            "lng": 66.907,
+            "lat": 50.2423
+        }
+    },
+    {
         "id": "astana-1",
         "name": "Астана-1",
         "coordinates": {
@@ -29,6 +61,166 @@
         "coordinates": {
             "lng": 71.5315818,
             "lat": 51.1123494
+        }
+    },
+    {
+        "id": "atbasar-1",
+        "name": "Атбасар-1",
+        "coordinates": {
+            "lng": 68.3517,
+            "lat": 51.8047
+        }
+    },
+    {
+        "id": "atyrau",
+        "name": "Атырау",
+        "coordinates": {
+            "lng": 51.9568,
+            "lat": 47.1295
+        }
+    },
+    {
+        "id": "ayagoz",
+        "name": "Аягоз",
+        "coordinates": {
+            "lng": 80.4438,
+            "lat": 47.9631
+        }
+    },
+    {
+        "id": "dostyk",
+        "name": "Достык",
+        "coordinates": {
+            "lng": 82.4867,
+            "lat": 45.2528
+        }
+    },
+    {
+        "id": "zhetysu",
+        "name": "Жетысу",
+        "coordinates": {
+            "lng": 77.0162,
+            "lat": 43.4245
+        }
+    },
+    {
+        "id": "karaganda-pass",
+        "name": "Караганда-Пассажирская",
+        "coordinates": {
+            "lng": 73.0945469,
+            "lat": 49.793079
+        }
+    },
+    {
+        "id": "kokshetau-1",
+        "name": "Кокшетау-1",
+        "coordinates": {
+            "lng": 69.42222,
+            "lat": 53.28833
+        }
+    },
+    {
+        "id": "kostanai",
+        "name": "Костанай",
+        "coordinates": {
+            "lng": 63.6064,
+            "lat": 53.2274
+        }
+    },
+    {
+        "id": "kyzylorda",
+        "name": "Кызылорда",
+        "coordinates": {
+            "lng": 65.4944,
+            "lat": 44.8552
+        }
+    },
+    {
+        "id": "mangistau",
+        "name": "Мангистау",
+        "coordinates": {
+            "lng": 51.3088,
+            "lat": 43.6969
+        }
+    },
+    {
+        "id": "oskemen-1",
+        "name": "Оскемен-1",
+        "coordinates": {
+            "lng": 82.564,
+            "lat": 50.0064
+        }
+    },
+    {
+        "id": "pavlodar",
+        "name": "Павлодар",
+        "coordinates": {
+            "lng": 76.97307,
+            "lat": 52.30052
+        }
+    },
+    {
+        "id": "petropavl",
+        "name": "Петропавловск",
+        "coordinates": {
+            "lng": 69.1697,
+            "lat": 54.8563
+        }
+    },
+    {
+        "id": "semey",
+        "name": "Семей",
+        "coordinates": {
+            "lng": 80.2628,
+            "lat": 50.432
+        }
+    },
+    {
+        "id": "taldygorgan",
+        "name": "Талдыкорган",
+        "coordinates": {
+            "lng": 78.3803,
+            "lat": 45.0035
+        }
+    },
+    {
+        "id": "taraz",
+        "name": "Тараз",
+        "coordinates": {
+            "lng": 71.3789,
+            "lat": 42.87
+        }
+    },
+    {
+        "id": "uralsk",
+        "name": "Уральск",
+        "coordinates": {
+            "lng": 51.3698,
+            "lat": 51.2288
+        }
+    },
+    {
+        "id": "oskemen",
+        "name": "Усть-Каменогорск",
+        "coordinates": {
+            "lng": 82.6477,
+            "lat": 49.9561
+        }
+    },
+    {
+        "id": "shy",
+        "name": "Шу",
+        "coordinates": {
+            "lng": 73.7606,
+            "lat": 43.6013
+        }
+    },
+    {
+        "id": "shymkent",
+        "name": "Шымкент",
+        "coordinates": {
+            "lng": 69.6102299,
+            "lat": 42.2988635
         }
     }
 ]

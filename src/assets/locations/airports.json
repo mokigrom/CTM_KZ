@@ -1,5 +1,13 @@
 [
     {
+        "id": "aktobe-airport",
+        "name": "Международный аэропорт Алии Молдагуловой",
+        "coordinates": {
+            "lng": 57.210378,
+            "lat": 50.248854
+        }
+    },
+    {
         "id": "almaty-airport",
         "name": "Международный аэропорт Алматы",
         "coordinates": {
@@ -8,11 +16,147 @@
         }
     },
     {
+        "id": "atyrau-airport",
+        "name": "Международный аэропорт Атырау",
+        "coordinates": {
+            "lng": 51.8304327,
+            "lat": 47.1224352
+        }
+    },
+    {
+        "id": "kostanai-airport",
+        "name": "Международный аэропорт «Ахмет Байтурсынов»",
+        "coordinates": {
+            "lng": 63.5501,
+            "lat": 53.2068
+        }
+    },
+    {
+        "id": "kokshetau-airport",
+        "name": "Международный аэропорт Кокшетау",
+        "coordinates": {
+            "lng": 69.59088,
+            "lat": 53.33351
+        }
+    },
+    {
+        "id": "uralsk-airport",
+        "name": "Международный аэропорт Маншук Маметовой",
+        "coordinates": {
+            "lng": 51.5434,
+            "lat": 51.15081
+        }
+    },
+    {
         "id": "astana-airport",
         "name": "Международный аэропорт Нурсултан Назарбаев",
         "coordinates": {
             "lng": 71.4648352,
             "lat": 51.029698
+        }
+    },
+    {
+        "id": "semey-airport",
+        "name": "Международный аэропорт Семей",
+        "coordinates": {
+            "lng": 80.217314,
+            "lat": 50.344943
+        }
+    },
+    {
+        "id": "turkestan-airport",
+        "name": "Международный аэропорт Хазрет Султан",
+        "coordinates": {
+            "lng": 68.5466843,
+            "lat": 43.3155647
+        }
+    },
+    {
+        "id": "shymkent-airport",
+        "name": "Международный аэропорт Шымкент",
+        "coordinates": {
+            "lng": 69.4931187,
+            "lat": 42.3662383
+        }
+    },
+    {
+        "id": "taraz-airport",
+        "name": "Аулие-Ата",
+        "coordinates": {
+            "lng": 71.2965,
+            "lat": 42.8617
+        }
+    },
+    {
+        "id": "ayaguz-airport",
+        "name": "Аягуз",
+        "coordinates": {
+            "lng": 80.4536,
+            "lat": 47.9211
+        }
+    },
+    {
+        "id": "balkhash-airport",
+        "name": "Балхаш",
+        "coordinates": {
+            "lng": 75.002484,
+            "lat": 46.883483
+        }
+    },
+    {
+        "id": "kyzylorda-airport",
+        "name": "Коркыт-Ата",
+        "coordinates": {
+            "lng": 82.504471,
+            "lat": 50.0260859
+        }
+    },
+    {
+        "id": "pavlodar-airport",
+        "name": "Павлодар",
+        "coordinates": {
+            "lng": 77.0685694,
+            "lat": 52.1981582
+        }
+    },
+    {
+        "id": "petropavl-airport",
+        "name": "Петропавловск",
+        "coordinates": {
+            "lng": 69.1779323,
+            "lat": 54.7785682
+        }
+    },
+    {
+        "id": "sary-arka-airport",
+        "name": "Сары-Арка",
+        "coordinates": {
+            "lng": 73.3393382,
+            "lat": 49.6774849
+        }
+    },
+    {
+        "id": "taldykorgan-airport",
+        "name": "Талдыкорган",
+        "coordinates": {
+            "lng": 78.442084,
+            "lat": 45.108738
+        }
+    },
+    {
+        "id": "oskemen-airport",
+        "name": "Усть-Каменогорск",
+        "coordinates": {
+            "lng": 82.504471,
+            "lat": 50.0260859
+        }
+    },
+    {
+        "id": "taldykorgan-airport",
+        "name": "Экибастуз",
+        "coordinates": {
+            "lng": 75.21659,
+            "lat": 51.58331
         }
     }
 ]
