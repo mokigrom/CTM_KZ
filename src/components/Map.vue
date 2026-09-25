@@ -1,15 +1,25 @@
 <template>
     <div ref="mapRef" id="js-map" class="map"></div>
+    <div id="location-options">
+        <button @click="changeVisibility('railway')" :class="{ active: railwayVisibility }">
+            <img src="/icons/railway_black.webp" v-if="!railwayVisibility">
+            <img src="/icons/railway_white.webp" v-if="railwayVisibility">   
+        </button>
+        <button @click="changeVisibility('airport')" :class="{ active: airportVisibility }">
+            <img src="/icons/airport_black.webp" v-if="!airportVisibility">
+            <img src="/icons/airport_white.webp" v-if="airportVisibility">   
+        </button>
+    </div>
     <div id="menu-locations">
         <div id="types">
-            <button id="railway" title="Железнодорожные вокзалы" @click="openLocationList('railway')" :class="{ active: menuLocationType === 'railway' }">
+            <button id="railway" title="Железнодорожные вокзалы" @click="openLocationList('railway')" :class="{ active: menuLocationType === 'railway' }" v-if="railwayVisibility">
                 <div class="icon">
                     <img src="/icons/railway_black.webp" alt="Railway Station Black Icon" v-if="menuLocationType !== 'railway'">
                     <img src="/icons/railway_white.webp" alt="Railway Station White Icon" v-if="menuLocationType === 'railway'">
-                    <b>Железн. вокзалы</b>
+                    <b>ЖД вокзалы</b>
                 </div>
             </button>
-            <button id="airport" title="Аэропорты" @click="openLocationList('airport')" :class="{ active: menuLocationType === 'airport' }">
+            <button id="airport" title="Аэропорты" @click="openLocationList('airport')" :class="{ active: menuLocationType === 'airport'}" v-if="airportVisibility">
                 <div class="icon">
                     <img src="/icons/airport_black.webp" alt="Airport Black Icon" v-if="menuLocationType !== 'airport'">
                     <img src="/icons/airport_white.webp" alt="Airport White Icon" v-if="menuLocationType === 'airport'">
@@ -17,7 +27,7 @@
                 </div>
             </button>
         </div>
-        <div id="location-list" class="railway-list popup" v-if="menuLocationType">
+        <div id="location-list" class="popup" v-if="menuLocationType">
             <ul v-if="menuLocationType === 'railway'">
                 <li v-for="railway in railwayList" :key="railway.id">
                     <button :id="railway.id" @click="goToLocation(railway.coordinates.lng, railway.coordinates.lat)">{{ railway.name }}</button>
@@ -61,7 +71,7 @@
         padding-block: 0; padding-inline: 0;
     }
 
-    #menu-locations {
+    #menu-locations, #location-options {
         display: flex;
         position: fixed;
         flex-direction: column;
@@ -71,6 +81,23 @@
         left: 8px;
         gap: 8px;
         z-index: 1;
+    }
+
+    #location-options {
+        flex-direction: row;
+        top: auto;
+        bottom: 8px;
+        width: initial;
+    }
+
+    #location-options button {
+        padding: 4px;
+    }
+
+    #location-options img {
+        display: block;
+        width: 25px;
+        height: 25px;
     }
 
     .map {
@@ -99,14 +126,20 @@
         margin: auto;
     }
 
-    #location-list.railway-list {
+    #location-list {
         display: flex;
         flex-direction: column;
-        padding: 8px;
+        padding: 7px;
         width: calc(100% - 16px);
+        overflow-y: auto;
+        max-height: 80vh;
     }
 
-    #location-list.railway-list ul {
+    #location-list::-webkit-scrollbar { appearance: none; width: 3px; scrollbar-width: none; }
+    #location-list::-webkit-scrollbar-track { background-color: transparent; }
+    #location-list::-webkit-scrollbar-thumb { background-color: black; }
+
+    #location-list ul {
         display: flex;
         flex-direction: column;
         list-style-type: none;
@@ -115,7 +148,7 @@
         gap: 0.25rem;
     }
 
-    #location-list.railway-list button {
+    #location-list button {
         display: block;
         text-align: left;
         padding: 0.25rem 0.5rem;
@@ -123,7 +156,7 @@
         border: none;
     }
 
-    #location-list.railway-list button:hover { text-decoration: underline; }
+    #location-list button:hover { text-decoration: underline; }
 
     .popup {
         background-color: white;
@@ -135,6 +168,7 @@
     import { ref, onMounted, onUnmounted } from 'vue';
     import Map from 'ol/Map';
     import OSM from 'ol/source/OSM';
+    import { Point } from 'ol/geom';
     import TileLayer from 'ol/layer/Tile';
     import View from 'ol/View';
     import { defaults as defaultInteractions } from 'ol/interaction/defaults';
@@ -144,9 +178,11 @@
     import VectorSource from 'ol/source/Vector';
     import Static from 'ol/source/ImageStatic';
     import GeoJSON from 'ol/format/GeoJSON'
-    import Style from 'ol/style/Style';
+    import { Style, Icon, Text } from 'ol/style';
     import Fill from 'ol/style/Fill';
     import Stroke from 'ol/style/Stroke';
+
+    import { Feature } from 'ol';
 
     // Import GeoJSON
     import lakes from '../assets/geo/lakes.json'
@@ -165,6 +201,9 @@
     type MenuKey = "railway" | "airport" | null;
     let menuLocationType = ref<MenuKey>(null);
 
+    const railwayVisibility = ref<boolean>(true);
+    const airportVisibility = ref<boolean>(true);
+
     interface Coordinate { lng: number, lat: number }
     interface Location { id: "string", name: string, coordinates: Coordinate[] };
     const railwayList = ref<Location[]>(railwayResponse);
@@ -178,31 +217,53 @@
         })
     });
 
-    const regionLayer = getLayer(
+    const regionLayer = addLayer(
         kzRegions,
         new Style({ stroke: new Stroke({ color: "#596d9f", width: 1.5 }) }),
         3
     );
 
-    const maskLayer = getLayer(
+    const maskLayer = addLayer(
         mask,
         new Style({ fill: new Fill({ color: "#ffffff" }) }),
         2,
         4960
     );
 
-    const lakeLayer = getLayer(
+    const lakeLayer = addLayer(
         lakes,
         new Style({ fill: new Fill({ color: "#addeff" }) }),
         3
     );
 
-    const borderLayer = getLayer(
+    const borderLayer = addLayer(
         kzBorder,
         new Style({ stroke: new Stroke({ color: "#596d9f", width: 3 }) }),
         3,
         4960
     );
+
+    const railwayMarkers = new VectorLayer({
+        source: new VectorSource({ features: createMarkers(railwayList.value, "/markers/railway_marker.svg", 'point') }),
+        zIndex: 4
+    });
+
+    const airportMarkers = new VectorLayer({
+        source: new VectorSource({ features: createMarkers(airportList.value, "/markers/airport_marker.svg", 'point') }),
+        zIndex: 5
+    });
+
+    const railwayLabels = new VectorLayer({
+        source: new VectorSource({ features: createMarkers(railwayList.value, "/markers/railway_marker.svg", 'label') }),
+        zIndex: 6,
+        minZoom: 10
+    });
+
+    const airportLabels = new VectorLayer({
+        source: new VectorSource({ features: createMarkers(airportList.value, "/markers/airport_marker.svg", 'label') }),
+        zIndex: 6,
+        minZoom: 10
+    });
 
     // Disable Page Scale
     window.addEventListener('wheel', (event) => {
@@ -216,7 +277,7 @@
     });
     //
 
-    function getLayer(source: VectorSource, style: Style, zIndex: number, renderBuffer: number = 100): VectorLayer {
+    function addLayer(source: VectorSource, style: Style, zIndex: number, renderBuffer: number = 100): VectorLayer {
         return new VectorLayer({
             source: new VectorSource({
             features: new GeoJSON().readFeatures(source, {
@@ -246,6 +307,63 @@
         view.setZoom(zoom);
     }
 
+    function createMarkers(list: Location[], iconSrc: string, locationType: 'point' | 'label'): Feature[] {
+        return list.map(location => {
+            const feature = new Feature({
+                geometry: new Point(
+                    fromLonLat([
+                        location.coordinates.lng,
+                        location.coordinates.lat
+                    ])
+                )
+            })
+
+            let style: Style;
+
+            switch (locationType) {
+                case 'point':
+                    style = new Style({
+                        image: new Icon({ src: iconSrc, scale: 0.05, anchor: [0.5, 1] }),
+                    });
+                    break;
+                case 'label':
+                    style = new Style({
+                        text: new Text({
+                            text: location.name,
+                            offsetY: 10,
+                            font: '14px sans-serif',
+                            fill: new Fill({ color: '#3a4868' }),
+                            stroke: new Stroke({ color: 'white', width: 6 }),
+                       })
+                    });
+                    break;
+            }
+
+            feature.set("id", location.id);
+            feature.set("name", location.name);
+            feature.setStyle(style);
+
+            return feature;
+        });
+    }
+
+    function changeVisibility(type: 'railway' | 'airport'): void {
+        switch (type) {
+            case 'railway':
+                railwayVisibility.value = !railwayVisibility.value;
+                railwayMarkers.setVisible(railwayVisibility.value)
+                railwayLabels.setVisible(railwayVisibility.value)
+                if (menuLocationType.value === 'railway') menuLocationType.value = null;
+                break;
+            case 'airport':
+                airportVisibility.value = !airportVisibility.value;
+                airportMarkers.setVisible(airportVisibility.value)
+                airportLabels.setVisible(airportVisibility.value)
+                if (menuLocationType.value === 'airport') menuLocationType.value = null;
+                break;
+        }
+    }
+
     onMounted( () => {
         map = new Map({
             target: mapRef.value!,
@@ -260,7 +378,11 @@
                 regionLayer,
                 lakeLayer,
                 borderLayer,
-                maskLayer
+                maskLayer,
+                railwayMarkers,
+                airportMarkers,
+                railwayLabels,
+                airportLabels
             ],
             view: new View({
                 center: fromLonLat([66.3, 48.5]),
