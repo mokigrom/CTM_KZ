@@ -1,6 +1,135 @@
 <template>
     <div ref="mapRef" id="js-map" class="map"></div>
+    <div id="menu-locations">
+        <div id="types">
+            <button id="railway" title="Железнодорожные вокзалы" @click="openLocationList('railway')" :class="{ active: menuLocationType === 'railway' }">
+                <div class="icon">
+                    <img src="/icons/railway_black.webp" alt="Railway Station Black Icon" v-if="menuLocationType !== 'railway'">
+                    <img src="/icons/railway_white.webp" alt="Railway Station White Icon" v-if="menuLocationType === 'railway'">
+                    <b>Железн. вокзалы</b>
+                </div>
+            </button>
+            <button id="airport" title="Аэропорты" @click="openLocationList('airport')" :class="{ active: menuLocationType === 'airport' }">
+                <div class="icon">
+                    <img src="/icons/airport_black.webp" alt="Airport Black Icon" v-if="menuLocationType !== 'airport'">
+                    <img src="/icons/airport_white.webp" alt="Airport White Icon" v-if="menuLocationType === 'airport'">
+                    <b>Аэропорты</b>
+                </div>
+            </button>
+        </div>
+        <div id="location-list" class="railway-list popup" v-if="menuLocationType">
+            <ul v-if="menuLocationType === 'railway'">
+                <li v-for="railway in railwayList" :key="railway.id">
+                    <button :id="railway.id" @click="goToLocation(railway.coordinates.lng, railway.coordinates.lat)">{{ railway.name }}</button>
+                </li>
+            </ul>
+            <ul v-else-if="menuLocationType === 'airport'">
+                <li v-for="airport in airportList" :key="airport.id">
+                    <button :id="airport.id" @click="goToLocation(airport.coordinates.lng, airport.coordinates.lat)">{{ airport.name }}</button>
+                </li>
+            </ul>
+        </div>
+    </div>
 </template>
+
+<style scoped>
+    button {
+        cursor: pointer;
+        color: black;
+        background-color: white;
+        border: 1px solid black;
+    }
+
+    button.active {
+        color: white;
+        background-color: black;
+    }
+
+    #types {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+    #types button {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-evenly;
+        appearance: none;
+        width: 49%;
+
+        padding-block: 0; padding-inline: 0;
+    }
+
+    #menu-locations {
+        display: flex;
+        position: fixed;
+        flex-direction: column;
+        width: 360px;
+        position: fixed;
+        top: 8px;
+        left: 8px;
+        gap: 8px;
+        z-index: 1;
+    }
+
+    .map {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+    }
+
+    .icon {
+        display: flex;
+    }
+
+    .icon img {
+        display: block;
+        width: 1.875rem;
+        height: 1.875rem;
+        margin-right: 8px;
+        pointer-events: none;
+        user-select: none;
+    }
+
+    .icon b {
+        font-size: 0.75rem;
+        margin-block: 0;
+        margin: auto;
+    }
+
+    #location-list.railway-list {
+        display: flex;
+        flex-direction: column;
+        padding: 8px;
+        width: calc(100% - 16px);
+    }
+
+    #location-list.railway-list ul {
+        display: flex;
+        flex-direction: column;
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        gap: 0.25rem;
+    }
+
+    #location-list.railway-list button {
+        display: block;
+        text-align: left;
+        padding: 0.25rem 0.5rem;
+        width: calc(100% - 0.125rem);
+        border: none;
+    }
+
+    #location-list.railway-list button:hover { text-decoration: underline; }
+
+    .popup {
+        background-color: white;
+        border: 1px solid black;
+    }
+</style>
 
 <script setup lang="ts">
     import { ref, onMounted, onUnmounted } from 'vue';
@@ -19,17 +148,33 @@
     import Fill from 'ol/style/Fill';
     import Stroke from 'ol/style/Stroke';
 
+    // Import GeoJSON
     import lakes from '../assets/geo/lakes.json'
     import kzRegions from '../assets/geo/regions.json';
     import kzBorder from '../assets/geo/border.json';
     import mask from '../assets/geo/mask.json';
 
-    const mapRef: Object = ref(null);
+    // Import Locations
+    import railwayResponse from '../assets/locations/railways.json';
+    import airportResponse from '../assets/locations/airports.json';
+
+    const env = import.meta.env;
+
+    const mapRef: Object = ref<Map | null>(null);
+    
+    type MenuKey = "railway" | "airport" | null;
+    let menuLocationType = ref<MenuKey>(null);
+
+    interface Coordinate { lng: number, lat: number }
+    interface Location { id: "string", name: string, coordinates: Coordinate[] };
+    const railwayList = ref<Location[]>(railwayResponse);
+    const airportList = ref<Location[]>(airportResponse);
+
     let map: Map | null = null;
 
     const OpenStreetMap: TileLayer = new TileLayer({
         source: new OSM({
-            url: "https://api.thunderforest.com/transport/{z}/{x}/{y}.png?apikey=5203085883c2470a9fa54bab98f3e0de"
+            url: env.VITE_MAP_URL
         })
     });
 
@@ -55,10 +200,11 @@
     const borderLayer = getLayer(
         kzBorder,
         new Style({ stroke: new Stroke({ color: "#596d9f", width: 3 }) }),
-        3
+        3,
+        4960
     );
 
-    // Disable Scale
+    // Disable Page Scale
     window.addEventListener('wheel', (event) => {
         if (event.ctrlKey || event.metaKey) event.preventDefault()
     }, { passive: false });
@@ -84,11 +230,23 @@
     });
     }
 
-    function goToLocation(map: Map, lng: number, lat: number, zoom: number = 15) {
-        const view: View = map.getView();
+    function openLocationList(key: MenuKey): void {
+        if (menuLocationType.value === key) menuLocationType.value = null
+        else menuLocationType.value = key;
     }
 
-    onMounted(() => {
+    function goToLocation(lng: number, lat: number, zoom: number = 16.5) {
+        const view: View = map.getView();
+        // view.animate({
+        //     center: fromLonLat([lng, lat]),
+        //     zoom: zoom,
+        //     duration: 1000
+        // });
+        view.setCenter(fromLonLat([lng, lat]));
+        view.setZoom(zoom);
+    }
+
+    onMounted( () => {
         map = new Map({
             target: mapRef.value!,
             // interactions: defaultInteractions({
@@ -106,11 +264,11 @@
             ],
             view: new View({
                 center: fromLonLat([66.3, 48.5]),
+                zoom: 5,
                 maxZoom: 18,
-                zoom: 1,
                 extent: [
-                    ...fromLonLat([42.8, 34.0]),
-                    ...fromLonLat([93.0, 58.5])
+                    ...fromLonLat([42.2, 34.0]),
+                    ...fromLonLat([92.5, 58.5])
                 ]
             })
         });
@@ -118,12 +276,3 @@
 
     onUnmounted(() => map?.setTarget(undefined));
 </script>
-
-<style scoped>
-    .map {
-        position: fixed;
-        top: 0;
-        bottom: 0;
-        width: 100%;
-    }
-</style>

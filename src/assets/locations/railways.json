@@ -1,0 +1,34 @@
+[
+    {
+        "id": "almaty-1",
+        "name": "Алматы-1",
+        "coordinates": {
+            "lng": 76.949222,
+            "lat": 43.341354
+        }
+    },
+    {
+        "id": "almaty-2",
+        "name": "Алматы-2",
+        "coordinates": {
+            "lng": 76.939064,
+            "lat": 43.273768
+        }
+    },
+    {
+        "id": "astana-1",
+        "name": "Астана-1",
+        "coordinates": {
+            "lng": 71.4096273,
+            "lat": 51.1954059
+        }
+    },
+    {
+        "id": "astana-nurly-zhol",
+        "name": "Астана Нұрлы Жол",
+        "coordinates": {
+            "lng": 71.5315818,
+            "lat": 51.1123494
+        }
+    }
+]

@@ -4,6 +4,4 @@ body {
   font-family: 'Roboto', sans-serif;
 }
 
-.ol-zoom, .ol-attribution.ol-unselectable.ol-control.ol-uncollapsible ul {
-  display: none;
-}
+.ol-zoom, .ol-attribution.ol-unselectable.ol-control.ol-uncollapsible ul { display: none; }
