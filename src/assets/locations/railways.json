@@ -104,6 +104,14 @@
         }
     },
     {
+        "id": "zhezkazgan",
+        "name": "Жезказган",
+        "coordinates": {
+            "lng": 67.691766,
+            "lat": 47.777415
+        }
+    },
+    {
         "id": "karaganda-pass",
         "name": "Караганда-Пассажирская",
         "coordinates": {
