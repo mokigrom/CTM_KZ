@@ -359,7 +359,7 @@
         });
     }
 
-    function createCrimeMarkers(list: Crime[], iconSrc: string, pointType: 'point' | 'label', iconScale: number = 0.075, labelOffset: LabelOffset = { x: 18, y: 18 }, labelFontSize: number = 12): Feature[] {
+    function createCrimeMarkers(list: Crime[], iconSrc: string, pointType: 'point' | 'label', iconScale: number = 0.075, labelOffset: LabelOffset = { x: 18, y: 18 }, labelFontSize: number = 12, labelText: string | null = null): Feature[] {
         return list.map(point => {
             const feature = new Feature({
                 geometry: new Point(
@@ -381,7 +381,7 @@
                 case 'label':
                     style = new Style({
                         text: new Text({
-                            text: String(point.count),
+                            text: labelText || String(point.count),
                             offsetX: labelOffset.x,
                             offsetY: labelOffset.y,
                             font: `${labelFontSize}px sans-serif`,
@@ -423,40 +423,31 @@
         }
     }
 
-    async function getData(iconId: number | null = null) {
-        const response = await fetch(env.VITE_BACKEND_DATA_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ "id": iconId })
-        });
+    async function getData(): Promise<Array<any>> {
+        const response = await fetch(env.VITE_BACKEND_DATA_URL);
 
         const data = await response.json();
         return data;
     }
 
     onMounted( async () => {
-        const unknownData = await getData(-1);
-        const unknownPointMarkers = new VectorLayer({
-            source: new VectorSource({ features: createCrimeMarkers(unknownData, "/markers/unknown_marker.svg", 'point') }),
-            zIndex: 7,
-            minZoom: 12
-        });
+        const alldata = await getData();
+        const weaponData = alldata.filter(point => point.icon_id === 0);
+        const drugData = alldata.filter(point => point.icon_id === 1);
+        const fistData = alldata.filter(point => point.icon_id === 3);
+        const fraudData = alldata.filter(point => point.icon_id === 4);
+        const theftData = alldata.filter(point => point.icon_id === 5);
+        const unknownData = alldata.filter(point => point.icon_id === 6);
 
-        const unknownLabelMarkers = new VectorLayer({
-            source: new VectorSource({
-                features: createCrimeMarkers(
-                    unknownData, "/markers/unknown_marker.svg", 'label'
-                )
-            }),
-            zIndex: 8,
-            minZoom: 16
-        });
+        const railwayData = alldata.filter(point => point.location_id.includes("railway"));
+        const airportData = alldata.filter(point => point.location_id.includes("airport"));
+        console.log(railwayData);
+        console.log(airportData);
 
-        const weaponData = await getData(0);
         const weaponPointMarkers = new VectorLayer({
             source: new VectorSource({ features: createCrimeMarkers(weaponData, "/markers/weapon_marker.svg", 'point') }),
             zIndex: 7,
-            minZoom: 12
+            minZoom: 14
         });
 
         const weaponLabelMarkers = new VectorLayer({
@@ -465,15 +456,14 @@
                     weaponData, "/markers/weapon_marker.svg", 'label'
                 )
             }),
-            zIndex: 8,
+            zIndex: 7,
             minZoom: 16
         })
 
-        const drugData = await getData(1);
         const drugPointMarkers = new VectorLayer({
             source: new VectorSource({ features: createCrimeMarkers(drugData, "/markers/drugs_marker.svg", 'point') }),
             zIndex: 7,
-            minZoom: 12
+            minZoom: 14
         });
 
         const drugLabelMarkers = new VectorLayer({
@@ -482,15 +472,14 @@
                     drugData, "/markers/drugs_marker.svg", 'label'
                 )
             }),
-            zIndex: 8,
+            zIndex: 7,
             minZoom: 16
         });
 
-        const fistData = await getData(3);
         const fistPointMarkers = new VectorLayer({
             source: new VectorSource({ features: createCrimeMarkers(fistData, "/markers/fist_marker.svg", 'point') }),
             zIndex: 7,
-            minZoom: 12
+            minZoom: 14
         });
 
         const fistLabelMarkers = new VectorLayer({
@@ -499,15 +488,14 @@
                     fistData, "/markers/fist_marker.svg", 'label'
                 )
             }),
-            zIndex: 8,
+            zIndex: 7,
             minZoom: 16
         });
 
-        const fraudData = await getData(4);
         const fraudPointMarkers = new VectorLayer({
             source: new VectorSource({ features: createCrimeMarkers(fraudData, "/markers/fraud_marker.svg", 'point') }),
             zIndex: 7,
-            minZoom: 12
+            minZoom: 14
         });
 
         const fraudLabelMarkers = new VectorLayer({
@@ -516,15 +504,14 @@
                     fraudData, "/markers/fraud_marker.svg", 'label'
                 )
             }),
-            zIndex: 8,
+            zIndex: 7,
             minZoom: 16
         });
 
-        const theftData = await getData(5);
         const theftPointMarkers = new VectorLayer({
             source: new VectorSource({ features: createCrimeMarkers(theftData, "/markers/theft_marker.svg", 'point') }),
             zIndex: 7,
-            minZoom: 12
+            minZoom: 14
         });
 
         const theftLabelMarkers = new VectorLayer({
@@ -533,7 +520,23 @@
                     theftData, "/markers/theft_marker.svg", 'label'
                 )
             }),
-            zIndex: 8,
+            zIndex: 7,
+            minZoom: 16
+        });
+
+        const unknownPointMarkers = new VectorLayer({
+            source: new VectorSource({ features: createCrimeMarkers(unknownData, "/markers/unknown_marker.svg", 'point') }),
+            zIndex: 7,
+            minZoom: 14
+        });
+
+        const unknownLabelMarkers = new VectorLayer({
+            source: new VectorSource({
+                features: createCrimeMarkers(
+                    unknownData, "/markers/unknown_marker.svg", 'label'
+                )
+            }),
+            zIndex: 7,
             minZoom: 16
         });
 
@@ -550,16 +553,16 @@
                 railwayLabels,
                 airportLabels,
                 unknownPointMarkers,
+                unknownLabelMarkers,
                 fistPointMarkers,
+                fistLabelMarkers,
                 fraudPointMarkers,
                 theftPointMarkers,
-                drugPointMarkers,
-                weaponPointMarkers,
-                unknownLabelMarkers,
-                fistLabelMarkers,
-                fraudLabelMarkers,
                 theftLabelMarkers,
+                fraudLabelMarkers,
+                drugPointMarkers,
                 drugLabelMarkers,
+                weaponPointMarkers,
                 weaponLabelMarkers
             ],
             view: new View({
