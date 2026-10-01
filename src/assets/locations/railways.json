@@ -1,6 +1,6 @@
 [
     {
-        "id": "aktobe-1",
+        "id": "aktobe-1-railway",
         "name": "Актобе-1",
         "coordinates": {
             "lng": 57.2142,
@@ -8,7 +8,7 @@
         }
     },
     {
-        "id": "aktogay-1",
+        "id": "aktogay-1-railway",
         "name": "Актогай-1",
         "coordinates": {
             "lng": 79.6817,
@@ -16,7 +16,7 @@
         }
     },
     {
-        "id": "almaty-1",
+        "id": "almaty-1-railway",
         "name": "Алматы-1",
         "coordinates": {
             "lng": 76.949222,
@@ -24,7 +24,7 @@
         }
     },
     {
-        "id": "almaty-2",
+        "id": "almaty-2-railway",
         "name": "Алматы-2",
         "coordinates": {
             "lng": 76.939064,
@@ -32,7 +32,7 @@
         }
     },
     {
-        "id": "altynkol-1",
+        "id": "altynkol-1-railway",
         "name": "Алтынколь",
         "coordinates": {
             "lng": 80.2951,
@@ -40,7 +40,7 @@
         }
     },
     {
-        "id": "arkalyk",
+        "id": "arkalyk-railway",
         "name": "Аркалык",
         "coordinates": {
             "lng": 66.907,
@@ -48,7 +48,7 @@
         }
     },
     {
-        "id": "astana-1",
+        "id": "astana-1-railway",
         "name": "Астана-1",
         "coordinates": {
             "lng": 71.4096273,
@@ -56,7 +56,7 @@
         }
     },
     {
-        "id": "astana-nurly-zhol",
+        "id": "astana-nurly-zhol-railway",
         "name": "Астана Нұрлы Жол",
         "coordinates": {
             "lng": 71.5315818,
@@ -64,7 +64,7 @@
         }
     },
     {
-        "id": "atbasar-1",
+        "id": "atbasar-1-railway",
         "name": "Атбасар-1",
         "coordinates": {
             "lng": 68.3517,
@@ -72,7 +72,7 @@
         }
     },
     {
-        "id": "atyrau",
+        "id": "atyrau-railway",
         "name": "Атырау",
         "coordinates": {
             "lng": 51.9568,
@@ -80,7 +80,7 @@
         }
     },
     {
-        "id": "ayagoz",
+        "id": "ayagoz-railway",
         "name": "Аягоз",
         "coordinates": {
             "lng": 80.4438,
@@ -88,7 +88,7 @@
         }
     },
     {
-        "id": "dostyk",
+        "id": "dostyk-railway",
         "name": "Достык",
         "coordinates": {
             "lng": 82.4867,
@@ -96,7 +96,7 @@
         }
     },
     {
-        "id": "zhetysu",
+        "id": "zhetysu-railway",
         "name": "Жетысу",
         "coordinates": {
             "lng": 77.0162,
@@ -104,7 +104,7 @@
         }
     },
     {
-        "id": "zhezkazgan",
+        "id": "zhezkazgan-railway",
         "name": "Жезказган",
         "coordinates": {
             "lng": 67.691766,
@@ -112,7 +112,7 @@
         }
     },
     {
-        "id": "karaganda-pass",
+        "id": "karaganda-pass-railway",
         "name": "Караганда-Пассажирская",
         "coordinates": {
             "lng": 73.0945469,
@@ -120,7 +120,7 @@
         }
     },
     {
-        "id": "kokshetau-1",
+        "id": "kokshetau-1-railway",
         "name": "Кокшетау-1",
         "coordinates": {
             "lng": 69.42222,
@@ -128,7 +128,7 @@
         }
     },
     {
-        "id": "kostanai",
+        "id": "kostanai-railway",
         "name": "Костанай",
         "coordinates": {
             "lng": 63.6064,
@@ -136,7 +136,7 @@
         }
     },
     {
-        "id": "kyzylorda",
+        "id": "kyzylorda-railway",
         "name": "Кызылорда",
         "coordinates": {
             "lng": 65.4944,
@@ -144,7 +144,7 @@
         }
     },
     {
-        "id": "mangistau",
+        "id": "mangistau-railway",
         "name": "Мангистау",
         "coordinates": {
             "lng": 51.3088,
@@ -152,7 +152,7 @@
         }
     },
     {
-        "id": "oskemen-1",
+        "id": "oskemen-1-railway",
         "name": "Оскемен-1",
         "coordinates": {
             "lng": 82.564,
@@ -160,7 +160,7 @@
         }
     },
     {
-        "id": "pavlodar",
+        "id": "pavlodar-railway",
         "name": "Павлодар",
         "coordinates": {
             "lng": 76.97307,
@@ -168,7 +168,7 @@
         }
     },
     {
-        "id": "petropavl",
+        "id": "petropavl-railway",
         "name": "Петропавловск",
         "coordinates": {
             "lng": 69.1697,
@@ -176,7 +176,7 @@
         }
     },
     {
-        "id": "semey",
+        "id": "semey-railway",
         "name": "Семей",
         "coordinates": {
             "lng": 80.2628,
@@ -184,7 +184,7 @@
         }
     },
     {
-        "id": "taldygorgan",
+        "id": "taldygorgan-railway",
         "name": "Талдыкорган",
         "coordinates": {
             "lng": 78.3803,
@@ -192,7 +192,7 @@
         }
     },
     {
-        "id": "taraz",
+        "id": "taraz-railway",
         "name": "Тараз",
         "coordinates": {
             "lng": 71.3789,
@@ -200,7 +200,7 @@
         }
     },
     {
-        "id": "uralsk",
+        "id": "uralsk-railway",
         "name": "Уральск",
         "coordinates": {
             "lng": 51.3698,
@@ -208,7 +208,7 @@
         }
     },
     {
-        "id": "oskemen",
+        "id": "oskemen-railway",
         "name": "Усть-Каменогорск",
         "coordinates": {
             "lng": 82.6477,
@@ -216,7 +216,7 @@
         }
     },
     {
-        "id": "shy",
+        "id": "shy-railway",
         "name": "Шу",
         "coordinates": {
             "lng": 73.7606,
@@ -224,7 +224,7 @@
         }
     },
     {
-        "id": "shymkent",
+        "id": "shymkent-railway",
         "name": "Шымкент",
         "coordinates": {
             "lng": 69.6102299,
