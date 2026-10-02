@@ -1,15 +1,5 @@
 <template>
     <div ref="mapRef" id="js-map" class="map"></div>
-    <div
-        v-if="hoveredCrime"
-        id="crime-tooltip"
-        :style="{ left: `${crimeTooltipPosition.x}px`, top: `${crimeTooltipPosition.y}px` }"
-        aria-live="polite"
-    >
-        <strong>{{ hoveredCrime.article_name }}</strong>
-        <span>{{ hoveredCrime.article }}</span>
-        <span>Количество: {{ hoveredCrime.count }}</span>
-    </div>
     <div id="location-options">
         <button @click="changeVisibility('railway')" :class="{ active: railwayVisibility }">
             <img src="/icons/railway_black.webp" v-if="!railwayVisibility">
@@ -104,6 +94,16 @@
                 </li>
             </ul>
         </div>
+        <div
+            v-if="hoveredCrime"
+            id="crime-tooltip"
+            :style="{ left: `${crimeTooltipPosition.x}px`, top: `${crimeTooltipPosition.y}px` }"
+            aria-live="polite"
+        >
+            <strong>{{ hoveredCrime.article_name }}</strong>
+            <span>{{ hoveredCrime.article }}</span>
+            <span><i>Количество: {{ hoveredCrime.count }}</i></span>
+        </div>
     </div>
 </template>
 
@@ -183,7 +183,6 @@
         color: #222;
         background-color: white;
         border: 1px solid #596d9f;
-        border-radius: 4px;
         box-shadow: 0 2px 8px rgb(0 0 0 / 20%);
         font-size: 0.875rem;
         pointer-events: none;
@@ -364,6 +363,7 @@
 
     // Import Images
     import locationMarker from '../assets/images/location_marker.svg';
+    import selectedLocationMarker from '../assets/images/selected_location_marker.svg';
 
     const env = import.meta.env;
     
@@ -375,6 +375,7 @@
     const selectedCrimes = ref<Crime[]>([]);
     const hoveredCrime = ref<CrimeTooltipData | null>(null);
     const crimeTooltipPosition = ref({ x: 0, y: 0 });
+    let clearSelectedLocation: (() => void) | null = null;
     const locationMarkerByType = {
         railway: "/markers/railway_marker.svg",
         airport: "/markers/airport_marker.svg"
@@ -698,7 +699,39 @@
         };
     }
 
+    function setLocationSelected(
+        layers: { point: VectorLayer, label: VectorLayer },
+        locationId: string,
+        selected: boolean
+    ): void {
+        const pointFeature = layers.point.getSource()?.getFeatures().find(
+            feature => feature.get("id") === locationId
+        );
+        const pointStyle = pointFeature?.getStyle();
+        const marker = pointStyle instanceof Style ? pointStyle.getImage() : null;
+
+        if (marker instanceof Icon) {
+            marker.setSrc(selected ? selectedLocationMarker : locationMarker);
+        }
+        pointFeature?.changed();
+
+        const labelFeature = layers.label.getSource()?.getFeatures().find(
+            feature => feature.get("id") === locationId
+        );
+        const labelStyle = labelFeature?.getStyle();
+        const text = labelStyle instanceof Style ? labelStyle.getText() : null;
+
+        if (text) {
+            text.setFill(new Fill({ color: selected ? "white" : "#3a4868" }));
+            text.setStroke(null);
+        }
+        labelFeature?.changed();
+        layers.point.changed();
+        layers.label.changed();
+    }
+
     function closeCrimePanel(): void {
+        clearSelectedLocation?.();
         selectedCrimeLocation.value = "";
         selectedCrimes.value = [];
     }
@@ -802,6 +835,17 @@
             })
         });
 
+        let selectedLocationId: string | null = null;
+        clearSelectedLocation = () => {
+            if (!selectedLocationId) return;
+
+            const selectedLayers = selectedLocationId.includes("airport")
+                ? airportCrimeMarkers
+                : railwayCrimeMarkers;
+            setLocationSelected(selectedLayers, selectedLocationId, false);
+            selectedLocationId = null;
+        };
+
         map.on('singleclick', (event) => {
             const feature = map?.forEachFeatureAtPixel(
                 event.pixel,
@@ -825,6 +869,19 @@
             if (typeof locationId !== "string" || typeof locationName !== "string") {
                 return;
             }
+
+            if (selectedLocationId && selectedLocationId !== locationId) {
+                const previousLayers = selectedLocationId.includes("airport")
+                    ? airportCrimeMarkers
+                    : railwayCrimeMarkers;
+                setLocationSelected(previousLayers, selectedLocationId, false);
+            }
+
+            const selectedLayers = locationId.includes("airport")
+                ? airportCrimeMarkers
+                : railwayCrimeMarkers;
+            setLocationSelected(selectedLayers, locationId, true);
+            selectedLocationId = locationId;
 
             selectedCrimeLocation.value = locationName;
             selectedCrimeLocationType.value = locationId.includes("railway")
