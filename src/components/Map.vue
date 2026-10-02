@@ -27,6 +27,9 @@
                 </div>
             </button>
         </div>
+        <div id="infopanel">
+            <h2>{{ selectedLocation }}</h2>
+        </div>
         <div id="location-list" class="popup" v-if="menuLocationType">
             <ul v-if="menuLocationType === 'railway'">
                 <li v-for="railway in railwayList" :key="railway.id">
@@ -192,12 +195,13 @@
     import airportResponse from '../assets/locations/airports.json';
 
     // Import Images
-    
+    import locationMarker from '../assets/images/location_marker.svg';
 
     const env = import.meta.env;
     
     type MenuKey = "railway" | "airport" | null;
     let menuLocationType = ref<MenuKey>(null);
+    let selectedLocation = ref<string>("");
 
     const railwayVisibility = ref<boolean>(true);
     const airportVisibility = ref<boolean>(true);
@@ -290,18 +294,23 @@
     });
     //
 
-    function addLayer(source: object, style: Style, zIndex: number, renderBuffer: number = 100): VectorLayer {
+    function addLayer(
+        source: object,
+        style: Style,
+        zIndex: number,
+        renderBuffer: number = 100
+    ): VectorLayer {
         return new VectorLayer({
             source: new VectorSource({
-            features: new GeoJSON().readFeatures(source, {
-                dataProjection: 'EPSG:4326',
-                featureProjection: 'EPSG:3857',
+                features: new GeoJSON().readFeatures(source, {
+                    dataProjection: 'EPSG:4326',
+                    featureProjection: 'EPSG:3857',
+                }),
             }),
-        }),
-        style: style,
-        zIndex: zIndex,
-        renderBuffer: renderBuffer
-    });
+            style,
+            zIndex,
+            renderBuffer,
+        });
     }
 
     function openLocationList(key: MenuKey): void {
@@ -317,8 +326,23 @@
 
     type LabelOffset = { x: number, y: number }
 
-    function createMarkers(list: Location[], iconSrc: string, locationType: 'point' | 'label', iconScale: number = 0.06, labelOffset: LabelOffset = { x: 0, y: 28 }, labelFontSize: number = 14): Feature[] {
+    function createMarkers(
+        list: Location[],
+        iconSrc: string,
+        locationType: 'point' | 'label',
+        iconScale: number = 0.06,
+        labelOffset: LabelOffset = { x: 0, y: 28 },
+        labelFontSize: number = 14,
+        textType: 'name' | 'count' = 'name',
+        data: Array<any> | null = null
+    ): Feature[] {
         return list.map(point => {
+            if (data) {
+                if (!point.id.includes(data[0].location_id)) {
+                    return new Feature();
+                }
+            }
+
             const feature = new Feature({
                 geometry: new Point(
                     fromLonLat([
@@ -330,21 +354,27 @@
 
             let style: Style;
 
+            const count = data?.reduce((sum, point) => sum + point.count, 0);
+
             switch (locationType) {
                 case 'point':
                     style = new Style({
-                        image: new Icon({ src: iconSrc, scale: iconScale, anchor: [0.5, 0.5] }),
+                        image: new Icon({
+                            src: iconSrc,
+                            scale: iconScale,
+                            anchor: [0.5, 0.5]
+                        })
                     });
                     break;
                 case 'label':
                     style = new Style({
                         text: new Text({
-                            text: point.name,
+                            text: textType === "name" || !data ? point.name : String(count),
                             offsetX: labelOffset.x,
                             offsetY: labelOffset.y,
-                            font: `${labelFontSize}px sans-serif`,
+                            font: `bold ${labelFontSize}px sans-serif`,
                             fill: new Fill({ color: '#3a4868' }),
-                            stroke: new Stroke({ color: 'white', width: 6 }),
+                            stroke: new Stroke({ color: 'white', width: 6 })
                         })
                     });
                     break;
@@ -359,7 +389,15 @@
         });
     }
 
-    function createCrimeMarkers(list: Crime[], iconSrc: string, pointType: 'point' | 'label', iconScale: number = 0.075, labelOffset: LabelOffset = { x: 18, y: 18 }, labelFontSize: number = 12, labelText: string | null = null): Feature[] {
+    function createCrimeMarkers(
+        list: Crime[],
+        iconSrc: string,
+        pointType: 'point' | 'label',
+        iconScale: number = 0.06,
+        labelOffset: LabelOffset = { x: 16, y: 16 },
+        labelFontSize: number = 12,
+        labelText: string | null = null
+    ): Feature[] {
         return list.map(point => {
             const feature = new Feature({
                 geometry: new Point(
@@ -375,7 +413,11 @@
             switch (pointType) {
                 case 'point':
                     style = new Style({
-                        image: new Icon({ src: iconSrc, scale: iconScale, anchor: [0.5, 0.5] }),
+                        image: new Icon({
+                            src: iconSrc,
+                            scale: iconScale,
+                            anchor: [0.5, 0.5]
+                        }),
                     });
                     break;
                 case 'label':
@@ -386,7 +428,7 @@
                             offsetY: labelOffset.y,
                             font: `${labelFontSize}px sans-serif`,
                             fill: new Fill({ color: '#3a4868' }),
-                            stroke: new Stroke({ color: 'white', width: 6 }),
+                            stroke: new Stroke({ color: 'white', width: 6 })
                         })
                     });
                     break;
@@ -404,6 +446,65 @@
 
             return feature;
         });
+    }
+
+    function createCrimeLayerPair(
+        data: Crime[],
+        iconSrc: string
+    ): { point: VectorLayer, label: VectorLayer } {
+        return {
+            point: new VectorLayer({
+                source: new VectorSource({
+                    features: createCrimeMarkers(data, iconSrc, 'point')
+                }),
+                zIndex: 7,
+                minZoom: 14
+            }),
+            label: new VectorLayer({
+                source: new VectorSource({
+                    features: createCrimeMarkers(data, iconSrc, 'label')
+                }),
+                zIndex: 7,
+                minZoom: 16
+            })
+        };
+    }
+
+    function createLocationCrimeLayerPair(
+        locations: Location[],
+        data: Array<any>,
+        zIndex: number
+    ): { point: VectorLayer, label: VectorLayer } {
+        const createFeatures = (locationType: 'point' | 'label') =>
+            createMarkers(
+                locations,
+                locationMarker,
+                locationType,
+                0.08,
+                locationType === 'point' ? { x: 0, y: 0 } : { x: 0, y: 1.5 },
+                18,
+                locationType === 'point' ? 'name' : 'count',
+                data
+            );
+
+        return {
+            point: new VectorLayer({
+                source: new VectorSource({
+                    features: createFeatures('point')
+                }),
+                zIndex,
+                minZoom: 1,
+                maxZoom: 14
+            }),
+            label: new VectorLayer({
+                source: new VectorSource({
+                    features: createFeatures('label')
+                }),
+                zIndex,
+                minZoom: 1,
+                maxZoom: 14
+            })
+        };
     }
 
     function changeVisibility(type: 'railway' | 'airport'): void {
@@ -430,7 +531,7 @@
         return data;
     }
 
-    onMounted( async () => {
+    onMounted(async () => {
         const alldata = await getData();
         const weaponData = alldata.filter(point => point.icon_id === 0);
         const drugData = alldata.filter(point => point.icon_id === 1);
@@ -441,104 +542,26 @@
 
         const railwayData = alldata.filter(point => point.location_id.includes("railway"));
         const airportData = alldata.filter(point => point.location_id.includes("airport"));
-        console.log(railwayData);
-        console.log(airportData);
 
-        const weaponPointMarkers = new VectorLayer({
-            source: new VectorSource({ features: createCrimeMarkers(weaponData, "/markers/weapon_marker.svg", 'point') }),
-            zIndex: 7,
-            minZoom: 14
-        });
+        const railwayCrimeMarkers = createLocationCrimeLayerPair(
+            railwayList.value,
+            railwayData,
+            8
+        );
+        const airportCrimeMarkers = createLocationCrimeLayerPair(
+            airportList.value,
+            airportData,
+            9
+        );
 
-        const weaponLabelMarkers = new VectorLayer({
-            source: new VectorSource({
-                features: createCrimeMarkers(
-                    weaponData, "/markers/weapon_marker.svg", 'label'
-                )
-            }),
-            zIndex: 7,
-            minZoom: 16
-        })
-
-        const drugPointMarkers = new VectorLayer({
-            source: new VectorSource({ features: createCrimeMarkers(drugData, "/markers/drugs_marker.svg", 'point') }),
-            zIndex: 7,
-            minZoom: 14
-        });
-
-        const drugLabelMarkers = new VectorLayer({
-            source: new VectorSource({
-                features: createCrimeMarkers(
-                    drugData, "/markers/drugs_marker.svg", 'label'
-                )
-            }),
-            zIndex: 7,
-            minZoom: 16
-        });
-
-        const fistPointMarkers = new VectorLayer({
-            source: new VectorSource({ features: createCrimeMarkers(fistData, "/markers/fist_marker.svg", 'point') }),
-            zIndex: 7,
-            minZoom: 14
-        });
-
-        const fistLabelMarkers = new VectorLayer({
-            source: new VectorSource({
-                features: createCrimeMarkers(
-                    fistData, "/markers/fist_marker.svg", 'label'
-                )
-            }),
-            zIndex: 7,
-            minZoom: 16
-        });
-
-        const fraudPointMarkers = new VectorLayer({
-            source: new VectorSource({ features: createCrimeMarkers(fraudData, "/markers/fraud_marker.svg", 'point') }),
-            zIndex: 7,
-            minZoom: 14
-        });
-
-        const fraudLabelMarkers = new VectorLayer({
-            source: new VectorSource({
-                features: createCrimeMarkers(
-                    fraudData, "/markers/fraud_marker.svg", 'label'
-                )
-            }),
-            zIndex: 7,
-            minZoom: 16
-        });
-
-        const theftPointMarkers = new VectorLayer({
-            source: new VectorSource({ features: createCrimeMarkers(theftData, "/markers/theft_marker.svg", 'point') }),
-            zIndex: 7,
-            minZoom: 14
-        });
-
-        const theftLabelMarkers = new VectorLayer({
-            source: new VectorSource({
-                features: createCrimeMarkers(
-                    theftData, "/markers/theft_marker.svg", 'label'
-                )
-            }),
-            zIndex: 7,
-            minZoom: 16
-        });
-
-        const unknownPointMarkers = new VectorLayer({
-            source: new VectorSource({ features: createCrimeMarkers(unknownData, "/markers/unknown_marker.svg", 'point') }),
-            zIndex: 7,
-            minZoom: 14
-        });
-
-        const unknownLabelMarkers = new VectorLayer({
-            source: new VectorSource({
-                features: createCrimeMarkers(
-                    unknownData, "/markers/unknown_marker.svg", 'label'
-                )
-            }),
-            zIndex: 7,
-            minZoom: 16
-        });
+        const crimeLayers = {
+            weapon: createCrimeLayerPair(weaponData, "/markers/weapon_marker.svg"),
+            drug: createCrimeLayerPair(drugData, "/markers/drugs_marker.svg"),
+            fist: createCrimeLayerPair(fistData, "/markers/fist_marker.svg"),
+            fraud: createCrimeLayerPair(fraudData, "/markers/fraud_marker.svg"),
+            theft: createCrimeLayerPair(theftData, "/markers/theft_marker.svg"),
+            unknown: createCrimeLayerPair(unknownData, "/markers/unknown_marker.svg")
+        };
 
         map = new Map({
             target: "js-map",
@@ -552,18 +575,22 @@
                 airportMarkers,
                 railwayLabels,
                 airportLabels,
-                unknownPointMarkers,
-                unknownLabelMarkers,
-                fistPointMarkers,
-                fistLabelMarkers,
-                fraudPointMarkers,
-                theftPointMarkers,
-                theftLabelMarkers,
-                fraudLabelMarkers,
-                drugPointMarkers,
-                drugLabelMarkers,
-                weaponPointMarkers,
-                weaponLabelMarkers
+                crimeLayers.unknown.point,
+                crimeLayers.unknown.label,
+                crimeLayers.fist.point,
+                crimeLayers.fist.label,
+                crimeLayers.fraud.point,
+                crimeLayers.theft.point,
+                crimeLayers.theft.label,
+                crimeLayers.fraud.label,
+                crimeLayers.drug.point,
+                crimeLayers.drug.label,
+                crimeLayers.weapon.point,
+                crimeLayers.weapon.label,
+                railwayCrimeMarkers.point,
+                railwayCrimeMarkers.label,
+                airportCrimeMarkers.point,
+                airportCrimeMarkers.label
             ],
             view: new View({
                 center: fromLonLat([66.3, 48.5]),
