@@ -1,11 +1,11 @@
 <template>
     <div ref="mapRef" id="js-map" class="map"></div>
     <div id="location-options">
-        <button @click="changeVisibility('railway')" :class="{ active: railwayVisibility }">
+        <button @click="changeVisibility('railway'); closeCrimePanel();" :class="{ active: railwayVisibility }">
             <img src="/icons/railway_black.webp" v-if="!railwayVisibility">
             <img src="/icons/railway_white.webp" v-if="railwayVisibility">   
         </button>
-        <button @click="changeVisibility('airport')" :class="{ active: airportVisibility }">
+        <button @click="changeVisibility('airport'); closeCrimePanel();" :class="{ active: airportVisibility }">
             <img src="/icons/airport_black.webp" v-if="!airportVisibility">
             <img src="/icons/airport_white.webp" v-if="airportVisibility">   
         </button>
@@ -27,35 +27,43 @@
                 </div>
             </button>
         </div>
-        <div id="infopanel">
-            <h2>{{ selectedLocation }}</h2>
-        </div>
         <aside
             v-if="selectedCrimeLocation"
             id="crime-panel"
             class="popup"
             aria-live="polite"
         >
-            <div class="crime-panel-header">
+            <div class="crime-panel-header" :class="{ collapsed: crimePanelCollapsed }">
                 <h2>{{ selectedCrimeLocation }}</h2>
                 <div class="location-type">
-                    <span>{{ selectedCrimeLocationType === 'railway' ? 'ЖД станция' : 'Аэропорт' }}</span>
+                    <span>{{ selectedCrimeLocationType === 'railway' ? 'ЖД вокзал' : 'Аэропорт' }}</span>
                     <img
                         :src="locationMarkerByType[selectedCrimeLocationType]"
                         alt=""
                     >
                 </div>
-                <button
-                    type="button"
-                    class="close-button"
-                    aria-label="Закрыть"
-                    @click="closeCrimePanel"
-                    style="border: none;"
-                >
-                    &times;
-                </button>
+                <div style="display: flex; flex-direction: row;">
+                    <button
+                        type="button"
+                        class="collapse-button"
+                        :aria-expanded="!crimePanelCollapsed"
+                        :aria-label="crimePanelCollapsed ? 'Развернуть панель' : 'Свернуть панель'"
+                        @click="crimePanelCollapsed = !crimePanelCollapsed"
+                    >
+                        {{ crimePanelCollapsed ? '+' : '−' }}
+                    </button>
+                    <button
+                        type="button"
+                        class="close-button"
+                        aria-label="Закрыть"
+                        @click="closeCrimePanel"
+                        style="border: none;"
+                    >
+                        &times;
+                    </button>
+                </div>
             </div>
-            <div class="crime-table-container">
+            <div v-if="!crimePanelCollapsed" class="crime-table-container">
                 <table>
                     <thead>
                         <tr>
@@ -95,15 +103,31 @@
             </ul>
         </div>
         <div
-            v-if="hoveredCrime"
+            v-if="hoveredCrime || hoveredLocationMarker"
             id="crime-tooltip"
             :style="{ left: `${crimeTooltipPosition.x}px`, top: `${crimeTooltipPosition.y}px` }"
             aria-live="polite"
         >
-            <strong>{{ hoveredCrime.article_name }}</strong>
-            <span>{{ hoveredCrime.article }}</span>
-            <span><i>Количество: {{ hoveredCrime.count }}</i></span>
+            <b v-if="hoveredLocationMarker">{{ hoveredLocationMarker.name }}</b>
+            <template v-else-if="hoveredCrime">
+                <b>{{ hoveredCrime.article_name }}</b>
+                <span>{{ hoveredCrime.article }}</span>
+                <span><i>Количество: {{ hoveredCrime.count }}</i></span>
+            </template>
         </div>
+    </div>
+    <div id="open-hovered-location-container">
+        <button
+        v-if="nearbyLocation && !selectedCrimeLocation"
+        id="open-hovered-location-button"
+        type="button"
+        @click="openNearbyLocationCrimePanel"
+    >
+        <b>Открыть таблицу</b>
+    </button>
+    </div>
+    <div id="watermark">
+        <img src="/markers/airport_marker.svg">
     </div>
 </template>
 
@@ -170,6 +194,22 @@
         top: 0;
         bottom: 0;
         width: 100%;
+    }
+
+    #open-hovered-location-container {
+        position: fixed;
+        right: 8px; bottom: 8px;
+        z-index: 2;
+    }
+
+    #open-hovered-location-button {
+        max-width: calc(100vw - 16px);
+        padding: 8px 12px;
+        text-align: left;
+    }
+
+    #open-hovered-location-button:hover {
+        text-decoration: underline;
     }
 
     #crime-tooltip {
@@ -261,8 +301,12 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin: 12px 0;
+        margin-bottom: 12px;
         gap: 12px;
+    }
+
+    .crime-panel-header.collapsed {
+        margin-bottom: 0;
     }
 
     .crime-panel-header h2 {
@@ -283,12 +327,21 @@
         width: 28px;
         height: 28px;
         object-fit: contain;
+        user-select: none;
+        pointer-events: none;
     }
 
     .close-button {
         flex: 0 0 auto;
         font-size: 1.25rem;
         line-height: 1;
+    }
+
+    .collapse-button {
+        flex: 0 0 auto;
+        font-size: 1.125rem;
+        line-height: 1;
+        border: none;
     }
 
     .crime-table-container {
@@ -332,6 +385,18 @@
     #crime-panel td:last-child {
         text-align: right;
     }
+
+    #watermark {
+        position: fixed;
+        bottom: 8px; right: 8px;
+        pointer-events: none;
+    }
+
+    #watermark img {
+        height: 32px;
+        user-select: none;
+        opacity: 0.4;
+    }
 </style>
 
 <script setup lang="ts">
@@ -341,6 +406,7 @@
     import { Point } from 'ol/geom';
     import TileLayer from 'ol/layer/Tile';
     import View from 'ol/View';
+    import { defaults as defaultInteractions } from 'ol/interaction/defaults';
     import { fromLonLat } from 'ol/proj';
     import VectorLayer from 'ol/layer/Vector';
     import VectorSource from 'ol/source/Vector';
@@ -369,13 +435,16 @@
     
     type MenuKey = "railway" | "airport" | null;
     let menuLocationType = ref<MenuKey>(null);
-    let selectedLocation = ref<string>("");
     const selectedCrimeLocation = ref<string>("");
     const selectedCrimeLocationType = ref<'railway' | 'airport'>('railway');
     const selectedCrimes = ref<Crime[]>([]);
+    const crimePanelCollapsed = ref(false);
     const hoveredCrime = ref<CrimeTooltipData | null>(null);
+    const hoveredLocationMarker = ref<{ id: string, name: string } | null>(null);
+    const nearbyLocation = ref<{ id: string, name: string } | null>(null);
     const crimeTooltipPosition = ref({ x: 0, y: 0 });
     let clearSelectedLocation: (() => void) | null = null;
+    let openNearbyLocationCrimePanel: () => void = () => {};
     const locationMarkerByType = {
         railway: "/markers/railway_marker.svg",
         airport: "/markers/airport_marker.svg"
@@ -406,10 +475,13 @@
         icon_id: number
     };
 
+    type LocationCrimeLayers = { point: VectorLayer, label: VectorLayer };
     type CrimeTooltipData = Pick<Crime, 'article_name' | 'article' | 'count'>;
 
     const railwayList = ref<Location[]>(railwayResponse);
     const airportList = ref<Location[]>(airportResponse);
+    let railwayCrimeMarkerLayers: LocationCrimeLayers | null = null;
+    let airportCrimeMarkerLayers: LocationCrimeLayers | null = null;
 
     let map: Map | null = null;
 
@@ -503,8 +575,12 @@
     }
 
     function openLocationList(key: MenuKey): void {
-        if (menuLocationType.value === key) menuLocationType.value = null
+        if (menuLocationType.value === key) menuLocationType.value = null;
         else menuLocationType.value = key;
+    }
+
+    function closeLocationList(): void {
+        menuLocationType.value = null;
     }
 
     function goToLocation(lng: number, lat: number, zoom: number = 16.5) {
@@ -734,6 +810,7 @@
         clearSelectedLocation?.();
         selectedCrimeLocation.value = "";
         selectedCrimes.value = [];
+        crimePanelCollapsed.value = false;
     }
 
     function changeVisibility(type: 'railway' | 'airport'): void {
@@ -742,12 +819,22 @@
                 railwayVisibility.value = !railwayVisibility.value;
                 railwayMarkers.setVisible(railwayVisibility.value)
                 railwayLabels.setVisible(railwayVisibility.value)
+                railwayCrimeMarkerLayers?.point.setVisible(railwayVisibility.value);
+                railwayCrimeMarkerLayers?.label.setVisible(railwayVisibility.value);
+                if (!railwayVisibility.value && nearbyLocation.value?.id.includes("railway")) {
+                    nearbyLocation.value = null;
+                }
                 if (menuLocationType.value === 'railway') menuLocationType.value = null;
                 break;
             case 'airport':
                 airportVisibility.value = !airportVisibility.value;
                 airportMarkers.setVisible(airportVisibility.value)
                 airportLabels.setVisible(airportVisibility.value)
+                airportCrimeMarkerLayers?.point.setVisible(airportVisibility.value);
+                airportCrimeMarkerLayers?.label.setVisible(airportVisibility.value);
+                if (!airportVisibility.value && nearbyLocation.value?.id.includes("airport")) {
+                    nearbyLocation.value = null;
+                }
                 if (menuLocationType.value === 'airport') menuLocationType.value = null;
                 break;
         }
@@ -782,6 +869,12 @@
             airportData,
             9
         );
+        railwayCrimeMarkerLayers = railwayCrimeMarkers;
+        airportCrimeMarkerLayers = airportCrimeMarkers;
+        railwayCrimeMarkers.point.setVisible(railwayVisibility.value);
+        railwayCrimeMarkers.label.setVisible(railwayVisibility.value);
+        airportCrimeMarkers.point.setVisible(airportVisibility.value);
+        airportCrimeMarkers.label.setVisible(airportVisibility.value);
 
         const crimeLayers = {
             weapon: createCrimeLayerPair(weaponData, "/markers/weapon_marker.svg"),
@@ -831,8 +924,9 @@
                 extent: [
                     ...fromLonLat([42.2, 34.0]),
                     ...fromLonLat([92.5, 58.5])
-                ]
-            })
+                ],
+            }),
+            interactions: defaultInteractions({ doubleClickZoom: false })
         });
 
         let selectedLocationId: string | null = null;
@@ -846,7 +940,9 @@
             selectedLocationId = null;
         };
 
-        map.on('singleclick', (event) => {
+        map.on('dblclick', (event) => {
+            event.preventDefault();
+            const view = map!.getView();
             const feature = map?.forEachFeatureAtPixel(
                 event.pixel,
                 (candidate, layer) => {
@@ -858,10 +954,43 @@
                     ) {
                         return candidate;
                     }
-                }
+                },
+                { hitTolerance: 1 }
             );
 
-            if (!feature) return;
+            const geometry = feature?.getGeometry();
+            if (geometry instanceof Point) {
+                view.animate({
+                    center: geometry.getCoordinates(),
+                    zoom: 16.5,
+                    duration: 750
+                });
+            } else {
+                view.setCenter(fromLonLat([66.3, 48.5]));
+                view.setZoom(1.0);
+            }
+        });
+
+        map.on('click', (event) => {
+            const feature = map?.forEachFeatureAtPixel(
+                event.pixel,
+                (candidate, layer) => {
+                    if (
+                        layer === railwayCrimeMarkers.point ||
+                        layer === railwayCrimeMarkers.label ||
+                        layer === airportCrimeMarkers.point ||
+                        layer === airportCrimeMarkers.label
+                    ) {
+                        return candidate;
+                    }
+                }, { hitTolerance: 1 }
+            );
+
+            if (!feature) {
+                closeCrimePanel();
+                closeLocationList();
+                return;
+            }
 
             const locationId = feature.get("id");
             const locationName = feature.get("name");
@@ -870,6 +999,10 @@
                 return;
             }
 
+            openCrimePanelForLocation(locationId, locationName);
+        });
+
+        function openCrimePanelForLocation(locationId: string, locationName: string): void {
             if (selectedLocationId && selectedLocationId !== locationId) {
                 const previousLayers = selectedLocationId.includes("airport")
                     ? airportCrimeMarkers
@@ -884,16 +1017,87 @@
             selectedLocationId = locationId;
 
             selectedCrimeLocation.value = locationName;
+            // crimePanelCollapsed.value = false;
             selectedCrimeLocationType.value = locationId.includes("railway")
                 ? "railway"
                 : "airport";
             selectedCrimes.value = alldata.filter(crime =>
                 locationId.includes(crime.location_id)
             );
-        });
+            crimePanelCollapsed.value = false;
+            nearbyLocation.value = null;
+        }
+
+        openNearbyLocationCrimePanel = () => {
+            const location = nearbyLocation.value;
+            if (location) {
+                openCrimePanelForLocation(location.id, location.name);
+            }
+        };
+
+        function updateNearbyLocation(): void {
+            const zoom = map!.getView().getZoom() ?? 0;
+            if (zoom < 14) {
+                nearbyLocation.value = null;
+                return;
+            }
+
+            const size = map!.getSize();
+            if (!size) {
+                nearbyLocation.value = null;
+                return;
+            }
+
+            const centerPixel = [size[0] / 2, size[1] / 2];
+            const candidates = [
+                { layers: railwayCrimeMarkers, visible: railwayVisibility.value },
+                { layers: airportCrimeMarkers, visible: airportVisibility.value }
+            ];
+            let nearest: { id: string, name: string } | null = null;
+            let nearestDistance = 1200;
+
+            for (const { layers, visible } of candidates) {
+                if (!visible) continue;
+
+                for (const layer of [layers.point, layers.label]) {
+                    for (const feature of layer.getSource()?.getFeatures() ?? []) {
+                        const id = feature.get("id");
+                        const name = feature.get("name");
+                        const geometry = feature.getGeometry();
+
+                        if (
+                            typeof id !== "string" ||
+                            typeof name !== "string" ||
+                            !(geometry instanceof Point)
+                        ) {
+                            continue;
+                        }
+
+                        const pixel = map!.getPixelFromCoordinate(geometry.getCoordinates());
+                        if (!pixel) continue;
+
+                        const distance = Math.hypot(
+                            pixel[0] - centerPixel[0],
+                            pixel[1] - centerPixel[1]
+                        );
+
+                        if (distance <= nearestDistance) {
+                            nearestDistance = distance;
+                            nearest = { id, name };
+                        }
+                    }
+                }
+            }
+
+            nearbyLocation.value = nearest;
+        }
+
+        map.on('moveend', updateNearbyLocation);
+        map.getView().on('change:resolution', updateNearbyLocation);
 
         map.on('pointermove', (event) => {
             let isLocationMarker = false;
+            let locationAtPointer: { id: string, name: string } | null = null;
             let crimeAtPointer: CrimeTooltipData | null = null;
 
             map?.forEachFeatureAtPixel(
@@ -904,6 +1108,14 @@
                         layer === airportCrimeMarkers.point ||
                         layer === airportCrimeMarkers.label) {
                         isLocationMarker = true;
+                        const id = feature.get("id");
+                        const name = feature.get("name");
+
+                        if (typeof id === "string" && typeof name === "string") {
+                            locationAtPointer = { id, name };
+                            return true;
+                        }
+
                         return undefined;
                     }
 
@@ -930,11 +1142,12 @@
 
                     return undefined;
                 },
-                { hitTolerance: 10 }
+                { hitTolerance: 1 }
             );
 
+            hoveredLocationMarker.value = locationAtPointer;
             hoveredCrime.value = crimeAtPointer;
-            if (crimeAtPointer) {
+            if (crimeAtPointer || locationAtPointer) {
                 const mapBounds = map!.getTargetElement().getBoundingClientRect();
                 crimeTooltipPosition.value = {
                     x: mapBounds.left + event.pixel[0] + 12,
@@ -942,7 +1155,7 @@
                 };
             }
 
-            map!.getTargetElement().style.cursor = isLocationMarker || crimeAtPointer
+            map!.getTargetElement().style.cursor = isLocationMarker
                 ? 'pointer'
                 : '';
         });
