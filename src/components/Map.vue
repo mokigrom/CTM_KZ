@@ -198,18 +198,14 @@
 
     #open-hovered-location-container {
         position: fixed;
-        right: 8px; bottom: 8px;
+        top: 8px; right: 8px;
         z-index: 2;
     }
 
     #open-hovered-location-button {
         max-width: calc(100vw - 16px);
-        padding: 8px 12px;
+        padding: 6px 12px;
         text-align: left;
-    }
-
-    #open-hovered-location-button:hover {
-        text-decoration: underline;
     }
 
     #crime-tooltip {
@@ -241,7 +237,7 @@
         user-select: none;
     }
 
-    .icon b {
+    button b {
         font-size: 0.75rem;
         margin-block: 0;
         margin: auto;
@@ -518,23 +514,47 @@
     );
 
     const railwayMarkers = new VectorLayer({
-        source: new VectorSource({ features: createMarkers(railwayList.value, "/markers/railway_marker.svg", 'point') }),
+        source: new VectorSource({
+            features: createMarkers(
+                railwayList.value,
+                "/markers/railway_marker.svg",
+                'point'
+            )
+        }),
         zIndex: 4
     });
 
     const airportMarkers = new VectorLayer({
-        source: new VectorSource({ features: createMarkers(airportList.value, "/markers/airport_marker.svg", 'point') }),
+        source: new VectorSource({
+            features: createMarkers(
+                airportList.value,
+                "/markers/airport_marker.svg",
+                'point'
+            )
+        }),
         zIndex: 5
     });
 
     const railwayLabels = new VectorLayer({
-        source: new VectorSource({ features: createMarkers(railwayList.value, "/markers/railway_marker.svg", 'label') }),
+        source: new VectorSource({
+            features: createMarkers(
+                railwayList.value,
+                "/markers/railway_marker.svg",
+                'label'
+            )
+        }),
         zIndex: 6,
         minZoom: 10
     });
 
     const airportLabels = new VectorLayer({
-        source: new VectorSource({ features: createMarkers(airportList.value, "/markers/airport_marker.svg", 'label') }),
+        source: new VectorSource({
+            features: createMarkers(
+                airportList.value,
+                "/markers/airport_marker.svg",
+                'label'
+            )
+        }),
         zIndex: 6,
         minZoom: 10
     });
@@ -971,7 +991,7 @@
             }
         });
 
-        map.on('click', (event) => {
+        map.on('singleclick', (event) => {
             const feature = map?.forEachFeatureAtPixel(
                 event.pixel,
                 (candidate, layer) => {
@@ -1017,15 +1037,12 @@
             selectedLocationId = locationId;
 
             selectedCrimeLocation.value = locationName;
-            // crimePanelCollapsed.value = false;
             selectedCrimeLocationType.value = locationId.includes("railway")
                 ? "railway"
                 : "airport";
             selectedCrimes.value = alldata.filter(crime =>
                 locationId.includes(crime.location_id)
             );
-            crimePanelCollapsed.value = false;
-            nearbyLocation.value = null;
         }
 
         openNearbyLocationCrimePanel = () => {
@@ -1054,7 +1071,7 @@
                 { layers: airportCrimeMarkers, visible: airportVisibility.value }
             ];
             let nearest: { id: string, name: string } | null = null;
-            let nearestDistance = 1200;
+            let nearestDistance = 640;
 
             for (const { layers, visible } of candidates) {
                 if (!visible) continue;
