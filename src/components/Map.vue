@@ -424,8 +424,10 @@
     import airportResponse from '../assets/locations/airports.json';
 
     // Import Images
-    import locationMarker from '../assets/images/location_marker.svg';
-    import selectedLocationMarker from '../assets/images/selected_location_marker.svg';
+    import railwayLocationMarker from '../assets/images/railway_location_marker.svg';
+    import airportLocationMarker from '../assets/images/airport_location_marker.svg';
+    import selectedRailwayLocationMarker from '../assets/images/selected_railway_location_marker.svg';
+    import selectedAirportLocationMarker from '../assets/images/selected_airport_location_marker.svg';
 
     const env = import.meta.env;
     
@@ -660,7 +662,7 @@
                             offsetX: labelOffset.x,
                             offsetY: labelOffset.y,
                             font: `bold ${labelFontSize}px sans-serif`,
-                            fill: new Fill({ color: '#3a4868' }),
+                            fill: new Fill({ color: '#6a6a6a' }),
                             stroke: new Stroke({ color: 'white', width: 6 })
                         })
                     });
@@ -761,16 +763,17 @@
     function createLocationCrimeLayerPair(
         locations: Location[],
         data: Crime[],
-        zIndex: number
+        zIndex: number,
+        markerSrc: string
     ): { point: VectorLayer, label: VectorLayer } {
         const createFeatures = (locationType: 'point' | 'label') =>
             createMarkers(
                 locations,
-                locationMarker,
+                markerSrc,
                 locationType,
                 0.08,
-                locationType === 'point' ? { x: 0, y: 0 } : { x: 0, y: 1.5 },
-                18,
+                locationType === 'point' ? { x: 0, y: 0 } : { x: 16.5, y: -16.5 },
+                14,
                 locationType === 'point' ? 'name' : 'count',
                 data
             );
@@ -807,7 +810,12 @@
         const marker = pointStyle instanceof Style ? pointStyle.getImage() : null;
 
         if (marker instanceof Icon) {
-            marker.setSrc(selected ? selectedLocationMarker : locationMarker);
+            const isAirport = locationId.includes("airport");
+            marker.setSrc(
+                selected
+                    ? isAirport ? selectedAirportLocationMarker : selectedRailwayLocationMarker
+                    : isAirport ? airportLocationMarker : railwayLocationMarker
+            );
         }
         pointFeature?.changed();
 
@@ -818,8 +826,11 @@
         const text = labelStyle instanceof Style ? labelStyle.getText() : null;
 
         if (text) {
-            text.setFill(new Fill({ color: selected ? "white" : "#3a4868" }));
-            text.setStroke(null);
+            text.setFill(new Fill({ color: selected ? "white" : "#6a6a6a" }));
+            text.setStroke(new Stroke({ color: selected ? "#6a6a6a" : "white", width: 4 }));
+            text.setScale(selected ? 1.3 : 1.0);
+            text.setOffsetX(selected ? 19.5 : 16.5);
+            text.setOffsetY(selected ? -19.5 : -16.5);
         }
         labelFeature?.changed();
         layers.point.changed();
@@ -882,12 +893,14 @@
         const railwayCrimeMarkers = createLocationCrimeLayerPair(
             railwayList.value,
             railwayData,
-            8
+            8,
+            railwayLocationMarker
         );
         const airportCrimeMarkers = createLocationCrimeLayerPair(
             airportList.value,
             airportData,
-            9
+            9,
+            airportLocationMarker
         );
         railwayCrimeMarkerLayers = railwayCrimeMarkers;
         airportCrimeMarkerLayers = airportCrimeMarkers;
