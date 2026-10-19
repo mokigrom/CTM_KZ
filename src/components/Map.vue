@@ -12,20 +12,22 @@
     </div>
     <div id="menu-locations">
         <div id="types">
-            <button id="railway" title="Железнодорожные вокзалы" @click="openLocationList('railway')" :class="{ active: menuLocationType === 'railway' }" v-if="railwayVisibility">
-                <div class="icon">
-                    <img src="/icons/railway_black.webp" alt="Railway Station Black Icon" v-if="menuLocationType !== 'railway'">
-                    <img src="/icons/railway_white.webp" alt="Railway Station White Icon" v-if="menuLocationType === 'railway'">
-                    <b>ЖД вокзалы</b>
-                </div>
-            </button>
-            <button id="airport" title="Аэропорты" @click="openLocationList('airport')" :class="{ active: menuLocationType === 'airport'}" v-if="airportVisibility">
-                <div class="icon">
-                    <img src="/icons/airport_black.webp" alt="Airport Black Icon" v-if="menuLocationType !== 'airport'">
-                    <img src="/icons/airport_white.webp" alt="Airport White Icon" v-if="menuLocationType === 'airport'">
-                    <b>Аэропорты</b>
-                </div>
-            </button>
+            <div style="display: flex; justify-content: space-between; flex-direction: row; width: 100%; gap: 4px;">
+                <button id="railway" title="Железнодорожные вокзалы" @click="openLocationList('railway')" :class="{ active: menuLocationType === 'railway' }" v-if="railwayVisibility">
+                    <div class="icon">
+                        <img src="/icons/railway_black.webp" alt="Railway Station Black Icon" v-if="menuLocationType !== 'railway'">
+                        <img src="/icons/railway_white.webp" alt="Railway Station White Icon" v-if="menuLocationType === 'railway'">
+                        <b>ЖД вокзалы</b>
+                    </div>
+                </button>
+                <button id="airport" title="Аэропорты" @click="openLocationList('airport')" :class="{ active: menuLocationType === 'airport'}" v-if="airportVisibility">
+                    <div class="icon">
+                        <img src="/icons/airport_black.webp" alt="Airport Black Icon" v-if="menuLocationType !== 'airport'">
+                        <img src="/icons/airport_white.webp" alt="Airport White Icon" v-if="menuLocationType === 'airport'">
+                        <b>Аэропорты</b>
+                    </div>
+                </button>
+            </div>
         </div>
         <aside
             v-if="selectedCrimeLocation"
@@ -33,58 +35,57 @@
             class="popup"
             aria-live="polite"
         >
-            <div class="crime-panel-header" :class="{ collapsed: crimePanelCollapsed }">
-                <h2>{{ selectedCrimeLocation }}</h2>
-                <div class="location-type">
-                    <span>{{ selectedCrimeLocationType === 'railway' ? 'ЖД вокзал' : 'Аэропорт' }}</span>
-                    <img
+            <div class="crime-panel-header">
+                <div style="display: flex; flex-direction: row; gap: 8px;">
+                    <img 
                         :src="locationMarkerByType[selectedCrimeLocationType]"
-                        alt=""
+                        width="40"
                     >
+                    <h2>{{ selectedCrimeLocation }}</h2>
                 </div>
-                <div style="display: flex; flex-direction: row;">
-                    <button
-                        type="button"
-                        class="collapse-button"
-                        :aria-expanded="!crimePanelCollapsed"
-                        :aria-label="crimePanelCollapsed ? 'Развернуть панель' : 'Свернуть панель'"
-                        @click="crimePanelCollapsed = !crimePanelCollapsed"
-                    >
-                        {{ crimePanelCollapsed ? '+' : '−' }}
-                    </button>
+                <div style="display: flex; align-items: flex-start;">
                     <button
                         type="button"
                         class="close-button"
                         aria-label="Закрыть"
                         @click="closeCrimePanel"
-                        style="border: none;"
                     >
-                        &times;
+                        <span>&times;</span>
                     </button>
                 </div>
             </div>
-            <div v-if="!crimePanelCollapsed" class="crime-table-container">
+            <div class="crime-table-container">
                 <table>
                     <thead>
                         <tr>
+                            <th style="font-size: 0.86rem; text-align: center;">№</th>
                             <th style="font-size: 0.86rem;">Наименование</th>
                             <th style="font-size: 0.8rem;">Статья</th>
-                            <th style="font-size: 0.86rem; text-align: left;">Кол-во</th>
+                            <th style="font-size: 0.86rem; text-align: center;">Кол-во</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="crime in selectedCrimes" :key="crime.id">
+                        <tr v-for="crime, num in selectedCrimes" :key="crime.id">
+                            <td style="padding: 0; font-size: 0.86rem; text-align: center; position: relative;">
+                                <b style="position: absolute; top: 6px; left: 0; width: 100%;">{{ num + 1 }}</b>
+                            </td>
                             <td style="font-size: 0.86rem;">
                                 <div class="crime-name-cell">
                                     <span>{{ crime.article_name }}</span>
                                     <img :src="crimeMarkerByIconId[crime.icon_id] ?? crimeMarkerByIconId[6]">
                                 </div>
                             </td>
-                            <td style="font-size: 0.8rem;">{{ crime.article }}</td>
+                            <td style="font-size: 0.8rem;"><i>{{ crime.article }}</i></td>
                             <td style="font-size: 0.86rem; text-align: center;">{{ crime.count }}</td>
                         </tr>
+                        <tr style="background-color: grey; color: white; border-color: black;">
+                            <td style="border: none;"></td>
+                            <td style="font-size: 0.96rem; text-align: left; border: none;"><b>Итого</b></td>
+                            <td style="border: none;"></td>
+                            <td style="font-size: 0.96rem; text-align: center; border: none;"><b>{{ selectedCrimes.reduce((sum, item) => sum + item.count, 0) }}</b></td>
+                        </tr>
                         <tr v-if="selectedCrimes.length === 0">
-                            <td colspan="3">Нет данных о преступлениях</td>
+                            <td colspan="3">Данные отсутствуют</td>
                         </tr>
                     </tbody>
                 </table>
@@ -111,8 +112,8 @@
             <b v-if="hoveredLocationMarker">{{ hoveredLocationMarker.name }}</b>
             <template v-else-if="hoveredCrime">
                 <b>{{ hoveredCrime.article_name }}</b>
-                <span>{{ hoveredCrime.article }}</span>
-                <span><i>Количество: {{ hoveredCrime.count }}</i></span>
+                <span><i>{{ hoveredCrime.article }}</i></span>
+                <span>Количество: {{ hoveredCrime.count }}</span>
             </template>
         </div>
     </div>
@@ -147,7 +148,6 @@
     #types {
         display: flex;
         flex-direction: row;
-        justify-content: space-between;
     }
 
     #types button {
@@ -297,6 +297,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
+        position: relative;
         margin-bottom: 12px;
         gap: 12px;
     }
@@ -329,8 +330,23 @@
 
     .close-button {
         flex: 0 0 auto;
+        position: relative;
+        justify-content: center;
+        align-items: center;
         font-size: 1.25rem;
+        padding: 0;
         line-height: 1;
+        width: 24px; height: 24px;
+        font-size: 24px;
+        background-color: black;
+        color: white;
+        border-radius: 8px;
+    }
+
+    .close-button span {
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translateX(-50%) translateY(-50%);
     }
 
     .collapse-button {
@@ -380,6 +396,10 @@
     #crime-panel th:last-child,
     #crime-panel td:last-child {
         text-align: right;
+    }
+
+    #crime-tooltip {
+        border-radius: 6px;
     }
 
     #watermark {
@@ -436,7 +456,6 @@
     const selectedCrimeLocation = ref<string>("");
     const selectedCrimeLocationType = ref<'railway' | 'airport'>('railway');
     const selectedCrimes = ref<Crime[]>([]);
-    const crimePanelCollapsed = ref(false);
     const hoveredCrime = ref<CrimeTooltipData | null>(null);
     const hoveredLocationMarker = ref<{ id: string, name: string } | null>(null);
     const nearbyLocation = ref<{ id: string, name: string } | null>(null);
@@ -609,6 +628,7 @@
         const view: View = map!.getView();
         view.setCenter(fromLonLat([lng, lat]));
         view.setZoom(zoom);
+        closeCrimePanel();
     }
 
     type LabelOffset = { x: number, y: number }
@@ -662,8 +682,8 @@
                             offsetX: labelOffset.x,
                             offsetY: labelOffset.y,
                             font: `bold ${labelFontSize}px sans-serif`,
-                            fill: new Fill({ color: '#6a6a6a' }),
-                            stroke: new Stroke({ color: 'white', width: 6 })
+                            fill: new Fill({ color: 'white' }),
+                            stroke: new Stroke({ color: 'black', width: 4 })
                         })
                     });
                     break;
@@ -771,8 +791,8 @@
                 locations,
                 markerSrc,
                 locationType,
-                0.08,
-                locationType === 'point' ? { x: 0, y: 0 } : { x: 16.5, y: -16.5 },
+                0.07,
+                locationType === 'point' ? { x: 0, y: 0 } : { x: 18.5, y: -18.5 },
                 14,
                 locationType === 'point' ? 'name' : 'count',
                 data
@@ -826,11 +846,9 @@
         const text = labelStyle instanceof Style ? labelStyle.getText() : null;
 
         if (text) {
-            text.setFill(new Fill({ color: selected ? "white" : "#6a6a6a" }));
-            text.setStroke(new Stroke({ color: selected ? "#6a6a6a" : "white", width: 4 }));
             text.setScale(selected ? 1.3 : 1.0);
-            text.setOffsetX(selected ? 19.5 : 16.5);
-            text.setOffsetY(selected ? -19.5 : -16.5);
+            text.setOffsetX(selected ? 21.5 : 18.5);
+            text.setOffsetY(selected ? -21.5 : -18.5);
         }
         labelFeature?.changed();
         layers.point.changed();
@@ -841,15 +859,14 @@
         clearSelectedLocation?.();
         selectedCrimeLocation.value = "";
         selectedCrimes.value = [];
-        crimePanelCollapsed.value = false;
     }
 
     function changeVisibility(type: 'railway' | 'airport'): void {
         switch (type) {
             case 'railway':
                 railwayVisibility.value = !railwayVisibility.value;
-                railwayMarkers.setVisible(railwayVisibility.value)
-                railwayLabels.setVisible(railwayVisibility.value)
+                railwayMarkers.setVisible(railwayVisibility.value);
+                railwayLabels.setVisible(railwayVisibility.value);
                 railwayCrimeMarkerLayers?.point.setVisible(railwayVisibility.value);
                 railwayCrimeMarkerLayers?.label.setVisible(railwayVisibility.value);
                 if (!railwayVisibility.value && nearbyLocation.value?.id.includes("railway")) {
@@ -859,8 +876,8 @@
                 break;
             case 'airport':
                 airportVisibility.value = !airportVisibility.value;
-                airportMarkers.setVisible(airportVisibility.value)
-                airportLabels.setVisible(airportVisibility.value)
+                airportMarkers.setVisible(airportVisibility.value);
+                airportLabels.setVisible(airportVisibility.value);
                 airportCrimeMarkerLayers?.point.setVisible(airportVisibility.value);
                 airportCrimeMarkerLayers?.label.setVisible(airportVisibility.value);
                 if (!airportVisibility.value && nearbyLocation.value?.id.includes("airport")) {
