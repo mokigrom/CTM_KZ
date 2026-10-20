@@ -7,24 +7,37 @@
         </button>
         <button @click="changeVisibility('airport'); closeCrimePanel();" :class="{ active: airportVisibility }">
             <img src="/icons/airport_black.webp" v-if="!airportVisibility">
-            <img src="/icons/airport_white.webp" v-if="airportVisibility">   
+            <img src="/icons/airport_white.webp" v-if="airportVisibility">
         </button>
     </div>
     <div id="menu-locations">
         <div id="types">
             <div style="display: flex; justify-content: space-between; flex-direction: row; width: 100%; gap: 4px;">
-                <button id="railway" title="Железнодорожные вокзалы" @click="openLocationList('railway')" :class="{ active: menuLocationType === 'railway' }" v-if="railwayVisibility">
+                <button id="railway" title="Железнодорожные вокзалы" @click="openLocationList('railway')" :class="{ active: menuLocationType === 'railway' }">
                     <div class="icon">
                         <img src="/icons/railway_black.webp" alt="Railway Station Black Icon" v-if="menuLocationType !== 'railway'">
                         <img src="/icons/railway_white.webp" alt="Railway Station White Icon" v-if="menuLocationType === 'railway'">
                         <b>ЖД вокзалы</b>
                     </div>
                 </button>
-                <button id="airport" title="Аэропорты" @click="openLocationList('airport')" :class="{ active: menuLocationType === 'airport'}" v-if="airportVisibility">
+                <button id="airport" title="Аэропорты" @click="openLocationList('airport')" :class="{ active: menuLocationType === 'airport'}">
                     <div class="icon">
                         <img src="/icons/airport_black.webp" alt="Airport Black Icon" v-if="menuLocationType !== 'airport'">
                         <img src="/icons/airport_white.webp" alt="Airport White Icon" v-if="menuLocationType === 'airport'">
                         <b>Аэропорты</b>
+                    </div>
+                </button>
+            </div>
+            <div class="agency-button-container">
+                <button
+                    id="agency"
+                    title="Отделы полиции"
+                    @click="openLocationList('agency')"
+                    :class="{ active: menuLocationType === 'agency'}"
+                    style="padding: 4px 0;"
+                >
+                    <div class="icon">
+                        <b>Отделы полиции</b>
                     </div>
                 </button>
             </div>
@@ -43,7 +56,7 @@
                     >
                     <h2>{{ selectedCrimeLocation }}</h2>
                 </div>
-                <div style="display: flex; align-items: flex-start;">
+                <div style="position: absolute; top: 0; right: 0;">
                     <button
                         type="button"
                         class="close-button"
@@ -78,15 +91,32 @@
                             <td style="font-size: 0.8rem;"><i>{{ crime.article }}</i></td>
                             <td style="font-size: 0.86rem; text-align: center;">{{ crime.count }}</td>
                         </tr>
-                        <tr style="background-color: grey; color: white; border-color: black;">
+                        <tr
+                            v-if="selectedCrimes.length > 0"
+                            :style="{
+                                backgroundColor: crimeCountColor(selectedCrimeCount),
+                                color: 'black',
+                                border: '2px solid black'
+                            }"
+                        >
                             <td style="border: none;"></td>
                             <td style="font-size: 0.96rem; text-align: left; border: none;"><b>Итого</b></td>
                             <td style="border: none;"></td>
-                            <td style="font-size: 0.96rem; text-align: center; border: none;"><b>{{ selectedCrimes.reduce((sum, item) => sum + item.count, 0) }}</b></td>
+                            <td style="font-size: 0.96rem; text-align: center; border: none;"><b>{{ selectedCrimeCount }}</b></td>
                         </tr>
                         <tr v-if="selectedCrimes.length === 0">
-                            <td colspan="3">Данные отсутствуют</td>
+                            <td colspan="4" style="text-align: center; height: 6rem;"><i>Данные отсутствуют</i></td>
                         </tr>
+                        <td
+                            colspan="4"
+                            style="font-size: 0.96rem; text-align: left; border: none; width: 100%;"
+                            :style="{
+                                backgroundColor: crimeCountColor(selectedCrimeCount),
+                                border: '1px solid black'
+                            }"
+                            v-if="selectedCrimes.length === 0"
+                            >
+                        </td>
                     </tbody>
                 </table>
             </div>
@@ -100,6 +130,11 @@
             <ul v-else-if="menuLocationType === 'airport'">
                 <li v-for="airport in airportList" :key="airport.id">
                     <button :id="airport.id" @click="goToLocation(airport.coordinates.lng, airport.coordinates.lat)">{{ airport.name }}</button>
+                </li>
+            </ul>
+            <ul v-else-if="menuLocationType === 'agency'">
+                <li v-for="agency in agencyList" :key="agency.id">
+                    <button :id="agency.id" @click="goToLocation(agency.coordinates.lng, agency.coordinates.lat)">{{ agency.name }}</button>
                 </li>
             </ul>
         </div>
@@ -119,16 +154,13 @@
     </div>
     <div id="open-hovered-location-container">
         <button
-        v-if="nearbyLocation && !selectedCrimeLocation"
-        id="open-hovered-location-button"
-        type="button"
-        @click="openNearbyLocationCrimePanel"
-    >
-        <b>Открыть таблицу</b>
-    </button>
-    </div>
-    <div id="watermark">
-        <img src="/markers/airport_marker.svg">
+            v-if="nearbyLocation && !selectedCrimeLocation"
+            id="open-hovered-location-button"
+            type="button"
+            @click="openNearbyLocationCrimePanel"
+        >
+            <b>Открыть таблицу</b>
+        </button>
     </div>
 </template>
 
@@ -137,7 +169,8 @@
         cursor: pointer;
         color: black;
         background-color: white;
-        border: 1px solid black;
+        border: 2px solid black;
+        border-radius: 6px;
     }
 
     button.active {
@@ -147,7 +180,8 @@
 
     #types {
         display: flex;
-        flex-direction: row;
+        flex-direction: column;
+        gap: 4px;
     }
 
     #types button {
@@ -155,16 +189,19 @@
         flex-direction: row;
         justify-content: space-evenly;
         appearance: none;
-        width: 49%;
 
         padding-block: 0; padding-inline: 0;
+        padding: 0 30px;
+    }
+
+    .agency-button-container button {
+        width: 100%;
     }
 
     #menu-locations, #location-options {
         display: flex;
         position: fixed;
         flex-direction: column;
-        width: 360px;
         position: fixed;
         top: 8px;
         left: 8px;
@@ -198,7 +235,7 @@
 
     #open-hovered-location-container {
         position: fixed;
-        top: 8px; right: 8px;
+        bottom: 8px; right: 8px;
         z-index: 2;
     }
 
@@ -249,7 +286,7 @@
         padding: 7px;
         width: calc(100% - 16px);
         overflow-y: auto;
-        max-height: 80vh;
+        max-height: 50vh;
     }
 
     #location-list::-webkit-scrollbar { appearance: none; width: 3px; scrollbar-width: none; }
@@ -278,11 +315,13 @@
     .popup {
         background-color: white;
         border: 1px solid black;
+        border-radius: 12px;
+        box-shadow: 0px 0px 12px #0000006a;
     }
 
     #crime-panel {
         position: fixed;
-        top: 8px;
+        bottom: 8px;
         right: 8px;
         z-index: 1;
         display: flex;
@@ -416,7 +455,7 @@
 </style>
 
 <script setup lang="ts">
-    import { ref, onMounted, onUnmounted } from 'vue';
+    import { computed, ref, onMounted, onUnmounted } from 'vue';
     import Map from 'ol/Map';
     import OSM from 'ol/source/OSM';
     import { Point } from 'ol/geom';
@@ -442,6 +481,7 @@
     // Import Locations
     import railwayResponse from '../assets/locations/railways.json';
     import airportResponse from '../assets/locations/airports.json';
+    import agencyResponse from '../assets/locations/agencies.json';
 
     // Import Images
     import railwayLocationMarker from '../assets/images/railway_location_marker.svg';
@@ -451,11 +491,14 @@
 
     const env = import.meta.env;
     
-    type MenuKey = "railway" | "airport" | null;
+    type MenuKey = "railway" | "airport" | "agency" | null;
     let menuLocationType = ref<MenuKey>(null);
     const selectedCrimeLocation = ref<string>("");
     const selectedCrimeLocationType = ref<'railway' | 'airport'>('railway');
     const selectedCrimes = ref<Crime[]>([]);
+    const selectedCrimeCount = computed(() =>
+        selectedCrimes.value.reduce((sum, crime) => sum + crime.count, 0)
+    );
     const hoveredCrime = ref<CrimeTooltipData | null>(null);
     const hoveredLocationMarker = ref<{ id: string, name: string } | null>(null);
     const nearbyLocation = ref<{ id: string, name: string } | null>(null);
@@ -477,7 +520,7 @@
     };
 
     const railwayVisibility = ref<boolean>(true);
-    const airportVisibility = ref<boolean>(true);
+    const airportVisibility = ref<boolean>(false);
 
     interface Coordinate { lng: number, lat: number }
     interface Location { id: string, name: string, coordinates: Coordinate };
@@ -497,6 +540,7 @@
 
     const railwayList = ref<Location[]>(railwayResponse);
     const airportList = ref<Location[]>(airportResponse);
+    const agencyList = ref<Location[]>(agencyResponse);
     let railwayCrimeMarkerLayers: LocationCrimeLayers | null = null;
     let airportCrimeMarkerLayers: LocationCrimeLayers | null = null;
 
@@ -633,6 +677,14 @@
 
     type LabelOffset = { x: number, y: number }
 
+    function crimeCountColor(count: number): string {
+        const severity = Math.min(Math.max(count, 0), 100) / 100;
+        const red = Math.round(255 * Math.min(severity * 2, 1));
+        const green = Math.round(255 * Math.min((1 - severity) * 2, 1));
+
+        return `rgb(${red}, ${green}, 0)`;
+    }
+
     function createMarkers(
         list: Location[],
         iconSrc: string,
@@ -647,10 +699,6 @@
             const locationCrimes = data?.filter(crime =>
                 point.id.includes(crime.location_id)
             ) ?? [];
-
-            if (data && locationCrimes.length === 0) {
-                return new Feature();
-            }
 
             const feature = new Feature({
                 geometry: new Point(
@@ -670,8 +718,10 @@
                     style = new Style({
                         image: new Icon({
                             src: iconSrc,
+                            crossOrigin: "anonymous",
                             scale: iconScale,
-                            anchor: [0.5, 0.5]
+                            anchor: [0.5, 0.5],
+                            color: data ? crimeCountColor(count) : undefined
                         })
                     });
                     break;
@@ -823,7 +873,8 @@
         locationId: string,
         selected: boolean
     ): void {
-        const pointFeature = layers.point.getSource()?.getFeatures().find(
+        const source = layers.point.getSource();
+        const pointFeature = source?.getFeatures().find(
             feature => feature.get("id") === locationId
         );
         const pointStyle = pointFeature?.getStyle();
@@ -837,20 +888,20 @@
                     : isAirport ? airportLocationMarker : railwayLocationMarker
             );
         }
-        pointFeature?.changed();
+        pointFeature.changed();
 
         const labelFeature = layers.label.getSource()?.getFeatures().find(
             feature => feature.get("id") === locationId
         );
-        const labelStyle = labelFeature?.getStyle();
-        const text = labelStyle instanceof Style ? labelStyle.getText() : null;
+        const labelStyle = labelFeature.getStyle();
+        const text = labelStyle.getText();
 
         if (text) {
             text.setScale(selected ? 1.3 : 1.0);
             text.setOffsetX(selected ? 21.5 : 18.5);
             text.setOffsetY(selected ? -21.5 : -18.5);
         }
-        labelFeature?.changed();
+        labelFeature.changed();
         layers.point.changed();
         layers.label.changed();
     }
@@ -861,31 +912,32 @@
         selectedCrimes.value = [];
     }
 
+    railwayMarkers.setVisible(true);
+    railwayLabels.setVisible(true);
+    airportMarkers.setVisible(false);
+    airportMarkers.setVisible(false);
+
     function changeVisibility(type: 'railway' | 'airport'): void {
-        switch (type) {
-            case 'railway':
-                railwayVisibility.value = !railwayVisibility.value;
-                railwayMarkers.setVisible(railwayVisibility.value);
-                railwayLabels.setVisible(railwayVisibility.value);
-                railwayCrimeMarkerLayers?.point.setVisible(railwayVisibility.value);
-                railwayCrimeMarkerLayers?.label.setVisible(railwayVisibility.value);
-                if (!railwayVisibility.value && nearbyLocation.value?.id.includes("railway")) {
-                    nearbyLocation.value = null;
-                }
-                if (menuLocationType.value === 'railway') menuLocationType.value = null;
-                break;
-            case 'airport':
-                airportVisibility.value = !airportVisibility.value;
-                airportMarkers.setVisible(airportVisibility.value);
-                airportLabels.setVisible(airportVisibility.value);
-                airportCrimeMarkerLayers?.point.setVisible(airportVisibility.value);
-                airportCrimeMarkerLayers?.label.setVisible(airportVisibility.value);
-                if (!airportVisibility.value && nearbyLocation.value?.id.includes("airport")) {
-                    nearbyLocation.value = null;
-                }
-                if (menuLocationType.value === 'airport') menuLocationType.value = null;
-                break;
+        railwayVisibility.value = type === 'railway' ? true : false;
+        airportVisibility.value = type === 'airport' ? true : false;
+
+        railwayMarkers.setVisible(railwayVisibility.value);
+        railwayLabels.setVisible(railwayVisibility.value);
+        railwayCrimeMarkerLayers?.point.setVisible(railwayVisibility.value);
+        railwayCrimeMarkerLayers?.label.setVisible(railwayVisibility.value);
+        if (!railwayVisibility.value && nearbyLocation.value?.id.includes("railway")) {
+            nearbyLocation.value = null;
         }
+        if (menuLocationType.value === 'railway') menuLocationType.value = null;
+
+        airportMarkers.setVisible(airportVisibility.value);
+        airportLabels.setVisible(airportVisibility.value);
+        airportCrimeMarkerLayers?.point.setVisible(airportVisibility.value);
+        airportCrimeMarkerLayers?.label.setVisible(airportVisibility.value);
+        if (!airportVisibility.value && nearbyLocation.value?.id.includes("airport")) {
+            nearbyLocation.value = null;
+        }
+        if (menuLocationType.value === 'airport') menuLocationType.value = null;
     }
 
     async function getData(): Promise<Crime[]> {
@@ -990,38 +1042,7 @@
             selectedLocationId = null;
         };
 
-        map.on('dblclick', (event) => {
-            event.preventDefault();
-            const view = map!.getView();
-            const feature = map?.forEachFeatureAtPixel(
-                event.pixel,
-                (candidate, layer) => {
-                    if (
-                        layer === railwayCrimeMarkers.point ||
-                        layer === railwayCrimeMarkers.label ||
-                        layer === airportCrimeMarkers.point ||
-                        layer === airportCrimeMarkers.label
-                    ) {
-                        return candidate;
-                    }
-                },
-                { hitTolerance: 1 }
-            );
-
-            const geometry = feature?.getGeometry();
-            if (geometry instanceof Point) {
-                view.animate({
-                    center: geometry.getCoordinates(),
-                    zoom: 16.5,
-                    duration: 750
-                });
-            } else {
-                view.setCenter(fromLonLat([66.3, 48.5]));
-                view.setZoom(1.0);
-            }
-        });
-
-        map.on('singleclick', (event) => {
+        map.on('click', (event) => {
             const feature = map?.forEachFeatureAtPixel(
                 event.pixel,
                 (candidate, layer) => {
@@ -1050,6 +1071,42 @@
             }
 
             openCrimePanelForLocation(locationId, locationName);
+        });
+
+        const viewport = map.getViewport();
+        
+        viewport.addEventListener('contextmenu', (event) => {
+            event.preventDefault();
+            const view = map!.getView();
+            const feature = map?.forEachFeatureAtPixel(
+                map.getEventPixel(event),
+                (candidate, layer) => {
+                    if (
+                        layer === railwayCrimeMarkers.point ||
+                        layer === railwayCrimeMarkers.label ||
+                        layer === airportCrimeMarkers.point ||
+                        layer === airportCrimeMarkers.label
+                    ) {
+                        return candidate;
+                    }
+                },
+                { hitTolerance: 1 }
+            );
+
+            const geometry = feature?.getGeometry();
+            if (geometry instanceof Point) {
+                view.animate({
+                    center: geometry.getCoordinates(),
+                    zoom: 16.5,
+                    duration: 750
+                });
+            } else {
+                view.setCenter(fromLonLat([66.3, 48.5]));
+                view.setZoom(1.0);
+
+                closeCrimePanel();
+                closeLocationList();
+            }
         });
 
         function openCrimePanelForLocation(locationId: string, locationName: string): void {
