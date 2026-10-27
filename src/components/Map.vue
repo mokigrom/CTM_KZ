@@ -3,7 +3,7 @@
     <div id="location-options">
         <button @click="changeVisibility('railway'); closeCrimePanel();" :class="{ active: railwayVisibility }">
             <img src="/icons/railway_black.webp" v-if="!railwayVisibility">
-            <img src="/icons/railway_white.webp" v-if="railwayVisibility">   
+            <img src="/icons/railway_white.webp" v-if="railwayVisibility">
         </button>
         <button @click="changeVisibility('airport'); closeCrimePanel();" :class="{ active: airportVisibility }">
             <img src="/icons/airport_black.webp" v-if="!airportVisibility">
@@ -31,13 +31,13 @@
             <div class="agency-button-container">
                 <button
                     id="agency"
-                    title="Отделы полиции"
+                    title="Органы полиции"
                     @click="openLocationList('agency')"
                     :class="{ active: menuLocationType === 'agency'}"
                     style="padding: 4px 0;"
                 >
                     <div class="icon">
-                        <b>Отделы полиции</b>
+                        <b>Органы полиции</b>
                     </div>
                 </button>
             </div>
@@ -63,7 +63,7 @@
                         aria-label="Закрыть"
                         @click="closeCrimePanel"
                     >
-                        <span>&times;</span>
+                        <span style="user-select: none;">&times;</span>
                     </button>
                 </div>
             </div>
@@ -123,18 +123,65 @@
         </aside>
         <div id="location-list" class="popup" v-if="menuLocationType">
             <ul v-if="menuLocationType === 'railway'">
-                <li v-for="railway in railwayList" :key="railway.id">
-                    <button :id="railway.id" @click="goToLocation(railway.coordinates.lng, railway.coordinates.lat)">{{ railway.name }}</button>
+                <div class="search-query">
+                    <input v-model="railwaySearchQuery" type="text" class="search-field" id="railway-sourch" placeholder="Поиск">
+                </div>
+                <li v-for="railway in filteredRailwayList" :key="railway.id">
+                    <button
+                        :id="railway.id"
+                        style="position: relative;"
+                        @click="goToLocation(railway.coordinates.lng, railway.coordinates.lat); changeVisibility('railway')"
+                    >
+                        <span>{{ railway.name }}</span>
+                        <span class="location-crime-count" :style="locationCrimeStyle(railway)" v-if="locationCrimeCount(railway) > 0">{{ locationCrimeCount(railway) }}</span>
+                    </button>
                 </li>
             </ul>
             <ul v-else-if="menuLocationType === 'airport'">
-                <li v-for="airport in airportList" :key="airport.id">
-                    <button :id="airport.id" @click="goToLocation(airport.coordinates.lng, airport.coordinates.lat)">{{ airport.name }}</button>
+                <div class="search-query">
+                    <input v-model="airportSearchQuery" type="text" class="search-field" id="railway-sourch" placeholder="Поиск">
+                </div>
+                <li v-for="airport in filteredAirportList" :key="airport.id">
+                    <button
+                        :id="airport.id"
+                        style="position: relative;"
+                        @click="goToLocation(airport.coordinates.lng, airport.coordinates.lat); changeVisibility('airport')"
+                    >
+                        <span>{{ airport.name }}</span>
+                        <span class="location-crime-count" :style="locationCrimeStyle(airport)" v-if="locationCrimeCount(airport) > 0">{{ locationCrimeCount(airport) }}</span>
+                    </button>
                 </li>
             </ul>
             <ul v-else-if="menuLocationType === 'agency'">
-                <li v-for="agency in agencyList" :key="agency.id">
-                    <button :id="agency.id" @click="goToLocation(agency.coordinates.lng, agency.coordinates.lat)">{{ agency.name }}</button>
+                <div class="search-query">
+                    <input v-model="agencySearchQuery" type="text" class="search-field" id="railway-sourch" placeholder="Поиск">
+                </div>
+                <li v-for="agency in filteredAgencyList" :key="agency.id">
+                    <button :id="agency.id" @click="goToLocation(agency.coordinates.lng, agency.coordinates.lat, 12.0)">{{ agency.name }}</button>
+                </li>
+            </ul>
+        </div>
+        <div
+            v-if="clusteredRailwayMenu"
+            class="popup railway-cluster-menu"
+            :style="{
+                left: `${clusteredRailwayMenu.x}px`,
+                top: `${clusteredRailwayMenu.y}px`
+            }"
+            @click.stop
+        >
+            <ul>
+                <li v-for="railway in clusteredRailwayMenu.locations" :key="railway.id">
+                    <button type="button" @click="selectRailwayFromCluster(railway)" style="position: relative;">
+                        {{ railway.name }}
+                        <span
+                            class="location-crime-count"
+                            :style="locationCrimeStyle(railway)"
+                            v-if="locationCrimeCount(railway) > 0"
+                            >
+                            {{ locationCrimeCount(railway) }}
+                        </span>
+                    </button>
                 </li>
             </ul>
         </div>
@@ -148,7 +195,9 @@
             <template v-else-if="hoveredCrime">
                 <b>{{ hoveredCrime.article_name }}</b>
                 <span><i>{{ hoveredCrime.article }}</i></span>
-                <span>Количество: {{ hoveredCrime.count }}</span>
+                <span>
+                    Количество: 
+                    <strong>{{ hoveredCrime.count }}</strong></span>
             </template>
         </div>
     </div>
@@ -162,20 +211,43 @@
             <b>Открыть таблицу</b>
         </button>
     </div>
+    <div id="main-menu">
+        <div class="logo-container">
+            <img src="/logo.svg" alt="Logo">
+        </div>
+        <div class="main-nav-btn">
+            <button class="notification-btn" title="Уведомления о прогнозах и угрозах">
+                <img src="../assets/images/notification.webp">
+                <!-- <img src="../assets/images/new_notification.webp"> -->
+            </button>
+            <button class="dashboard-btn blocked" title="Дашборд">
+                <img src="../assets/images/dashboard_icon.webp">
+            </button>
+        </div>
+    </div>
 </template>
 
 <style scoped>
     button {
+        display: block;
         cursor: pointer;
         color: black;
         background-color: white;
+        border-top: 2px solid #cacaca;
+        border-left: 2px solid #cacaca;
+        border-bottom: 2px solid #a4a4a4;
+        border-right: 2px solid #a4a4a4;
+        border-radius: 4px;
+    }
+
+    button:hover {
         border: 2px solid black;
-        border-radius: 6px;
     }
 
     button.active {
         color: white;
         background-color: black;
+        border: 2px solid black;
     }
 
     #types {
@@ -224,6 +296,9 @@
         display: block;
         width: 25px;
         height: 25px;
+
+        user-select: none;
+        pointer-events: none;
     }
 
     .map {
@@ -275,7 +350,7 @@
     }
 
     button b {
-        font-size: 0.75rem;
+        font-size: 0.85rem;
         margin-block: 0;
         margin: auto;
     }
@@ -289,8 +364,39 @@
         max-height: 50vh;
     }
 
-    #location-list::-webkit-scrollbar { appearance: none; width: 3px; scrollbar-width: none; }
-    #location-list::-webkit-scrollbar-track { background-color: transparent; }
+    .railway-cluster-menu {
+        position: fixed;
+        z-index: 3;
+        width: min(320px, calc(100vw - 24px));
+        max-height: 50vh;
+        padding: 8px;
+        box-sizing: border-box;
+        transform: translateX(-50%);
+        overflow-y: auto;
+    }
+
+    .railway-cluster-menu > b {
+        display: block;
+        padding: 4px 8px 8px;
+    }
+
+    .railway-cluster-menu ul {
+        display: flex;
+        flex-direction: column;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        gap: 4px;
+    }
+
+    .railway-cluster-menu button {
+        width: 100%;
+        padding: 6px 8px;
+        text-align: left;
+    }
+
+    #location-list::-webkit-scrollbar { width: 3.5px; scrollbar-width: none; }
+    #location-list::-webkit-scrollbar-track { background-color: transparent; margin: 6px; }
     #location-list::-webkit-scrollbar-thumb { background-color: black; }
 
     #location-list ul {
@@ -303,20 +409,79 @@
     }
 
     #location-list button {
-        display: block;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
         text-align: left;
         padding: 0.25rem 0.5rem;
         width: calc(100% - 0.125rem);
-        border: none;
+        border: 1px solid transparent;
+        border-bottom: 1px solid #8080805e;
+        border-radius: 0;
     }
 
-    #location-list button:hover { text-decoration: underline; }
+    #location-list button:hover {
+        filter: brightness(0.95);
+        border: 1px solid grey;
+        border-radius: 4px;
+    }
+
+    .location-crime-count {
+        font-weight: bold;
+        padding: 4px;
+        border: 1px solid black;
+        border-radius: 4px;
+        line-height: 1;
+
+        position: absolute;
+        top: 50%; right: 0.05rem;
+        transform: translateY(-50%);
+        min-height: max-content;
+    }
 
     .popup {
         background-color: white;
         border: 1px solid black;
-        border-radius: 12px;
-        box-shadow: 0px 0px 12px #0000006a;
+        border-radius: 8px;
+        box-shadow: 0px 4px 12px #0000009a;
+        animation: popupFadeIn 0.1s ease forwards;
+        overflow: hidden;
+    }
+
+    .popup img {
+        user-select: none;
+        pointer-events: none;
+    }
+
+    #location-list .search-query {
+        position: sticky;
+        top: 0; left: 0;
+        padding: 7px;
+        transform: translateX(-7px) translateY(-7px);
+        background-color: white;
+        z-index: 1;
+    }
+
+    #location-list .search-field {
+        position: sticky;
+        top: 0;
+        padding: 0.45rem;
+        width: calc(100% - 4px);
+        border: 1px solid grey;
+        border-radius: 4px;
+        z-index: 2;
+    }
+
+    @keyframes popupFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(4rem);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     #crime-panel {
@@ -345,6 +510,11 @@
         margin-bottom: 0;
     }
 
+    .crime-panel-header img {
+        user-select: none;
+        pointer-events: none;
+    }
+
     .crime-panel-header h2 {
         margin: auto 12px;
         margin-left: 0;
@@ -362,7 +532,6 @@
     .location-type img {
         width: 28px;
         height: 28px;
-        object-fit: contain;
         user-select: none;
         pointer-events: none;
     }
@@ -388,15 +557,21 @@
         transform: translateX(-50%) translateY(-50%);
     }
 
-    .collapse-button {
-        flex: 0 0 auto;
-        font-size: 1.125rem;
-        line-height: 1;
-        border: none;
+    .crime-table-container {
+        overflow-y: auto;
     }
 
-    .crime-table-container {
-        overflow: auto;
+    .crime-table-container td {
+        border: 1px solid #d0d0d0;
+    }
+
+    .crime-table-container thead {
+        border-bottom: 1px solid #d0d0d0;
+    }
+
+    .crime-table-container thead th {
+        background-color: white;
+        border: 1px solid black;
     }
 
     #crime-panel table {
@@ -408,7 +583,7 @@
     #crime-panel th,
     #crime-panel td {
         padding: 6px;
-        border: 1px solid #d0d0d0;
+        
     }
 
     .crime-name-cell {
@@ -441,6 +616,56 @@
         border-radius: 6px;
     }
 
+    #main-menu {
+        display: flex;
+        flex-direction: row-reverse;
+        position: fixed;
+        top: 8px; right: 8px;
+        padding: 8px;
+        gap: 1.5rem;
+        background-color: white;
+        border-radius: 0.5rem;
+    }
+
+    #main-menu .main-nav-btn {
+        display: flex;
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+
+    #main-menu button {
+        position: relative;
+        padding: 0.25rem;
+        width: 3rem;
+    }
+
+    #main-menu .notification-btn img, #main-menu .dashboard-btn img {
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translateX(-50%) translateY(-50%);
+        padding: 0.25rem;
+
+        pointer-events: none;
+    }
+
+    #main-menu .notification-btn, #main-menu .notification-btn img,
+    #main-menu .dashboard-btn, #main-menu .dashboard-btn img {
+        height: 32px;
+    }
+
+    #main-menu .logo-container img {
+        display: block;
+        height: 2rem;
+
+        user-select: none;
+    }
+
+    #main-menu .blocked {
+        cursor: default;
+        opacity: 0.35;
+        border: 2px solid transparent;
+    }
+
     #watermark {
         position: fixed;
         bottom: 8px; right: 8px;
@@ -466,7 +691,7 @@
     import VectorLayer from 'ol/layer/Vector';
     import VectorSource from 'ol/source/Vector';
     import GeoJSON from 'ol/format/GeoJSON'
-    import { Style, Icon, Text } from 'ol/style';
+    import { Style, Icon, Text, Circle as CircleStyle } from 'ol/style';
     import Fill from 'ol/style/Fill';
     import Stroke from 'ol/style/Stroke';
 
@@ -502,9 +727,16 @@
     const hoveredCrime = ref<CrimeTooltipData | null>(null);
     const hoveredLocationMarker = ref<{ id: string, name: string } | null>(null);
     const nearbyLocation = ref<{ id: string, name: string } | null>(null);
+    const clusteredRailwayMenu = ref<{
+        locations: Location[],
+        x: number,
+        y: number
+    } | null>(null);
     const crimeTooltipPosition = ref({ x: 0, y: 0 });
     let clearSelectedLocation: (() => void) | null = null;
     let openNearbyLocationCrimePanel: () => void = () => {};
+    let updateRailwayClusters: () => void = () => {};
+    let selectRailwayFromCluster: (location: Location) => void = () => {};
     const locationMarkerByType = {
         railway: "/markers/railway_marker.svg",
         airport: "/markers/airport_marker.svg"
@@ -518,6 +750,40 @@
         5: "/markers/theft_marker.svg",
         6: "/markers/unknown_marker.svg"
     };
+
+    const railwaySearchQuery = ref('');
+    const airportSearchQuery = ref('');
+    const agencySearchQuery = ref('');
+
+    const filteredRailwayList = computed(() => {
+        if (!railwaySearchQuery.value) {
+            return railwayList.value
+        }
+        const query = railwaySearchQuery.value.toLowerCase()
+        return railwayList.value.filter(item => 
+            item.name.toLowerCase().includes(query)
+        )
+    })
+
+    const filteredAirportList = computed(() => {
+        if (!airportSearchQuery.value) {
+            return airportList.value
+        }
+        const query = airportSearchQuery.value.toLowerCase()
+        return airportList.value.filter(item => 
+            item.name.toLowerCase().includes(query)
+        )
+    })
+
+    const filteredAgencyList = computed(() => {
+        if (!agencySearchQuery.value) {
+            return agencyList.value
+        }
+        const query = agencySearchQuery.value.toLowerCase()
+        return agencyList.value.filter(item => 
+            item.name.toLowerCase().includes(query)
+        )
+    })
 
     const railwayVisibility = ref<boolean>(true);
     const airportVisibility = ref<boolean>(false);
@@ -541,10 +807,29 @@
     const railwayList = ref<Location[]>(railwayResponse);
     const airportList = ref<Location[]>(airportResponse);
     const agencyList = ref<Location[]>(agencyResponse);
+    const locationCrimeCounts = ref<Record<string, number>>({});
     let railwayCrimeMarkerLayers: LocationCrimeLayers | null = null;
     let airportCrimeMarkerLayers: LocationCrimeLayers | null = null;
 
     let map: Map | null = null;
+    const railwayClusterSource = new VectorSource();
+    const railwayClusterLayer = new VectorLayer({
+        source: railwayClusterSource,
+        style: feature => new Style({
+            image: new CircleStyle({
+                radius: 16,
+                fill: new Fill({ color: '#ffffff' }),
+                stroke: new Stroke({ color: '#222222', width: 2 })
+            }),
+            text: new Text({
+                text: String(feature.get('count')),
+                offsetY: 1,
+                font: 'bold 16px sans-serif',
+                fill: new Fill({ color: '#222222' })
+            })
+        }),
+        zIndex: 10
+    });
 
     const OpenStreetMap: TileLayer = new TileLayer({
         source: new OSM({
@@ -685,6 +970,19 @@
         return `rgb(${red}, ${green}, 0)`;
     }
 
+    function locationCrimeCount(location: Location): number {
+        return locationCrimeCounts.value[location.id] ?? 0;
+    }
+
+    function locationCrimeStyle(location: Location): { backgroundColor: string, color: string } {
+        const count = locationCrimeCount(location);
+
+        return {
+            backgroundColor: count > 0 ? crimeCountColor(count) : 'transparent',
+            color: '#000'
+        };
+    }
+
     function createMarkers(
         list: Location[],
         iconSrc: string,
@@ -721,14 +1019,16 @@
                             crossOrigin: "anonymous",
                             scale: iconScale,
                             anchor: [0.5, 0.5],
-                            color: data ? crimeCountColor(count) : undefined
+                            color: data && count > 0 ? crimeCountColor(count) : undefined
                         })
                     });
                     break;
                 case 'label':
                     style = new Style({
                         text: new Text({
-                            text: textType === "name" || !data ? point.name : String(count),
+                            text: textType === "name" || !data
+                                ? point.name
+                                : count > 0 ? String(count) : "",
                             offsetX: labelOffset.x,
                             offsetY: labelOffset.y,
                             font: `bold ${labelFontSize}px sans-serif`,
@@ -742,6 +1042,7 @@
             feature.set("id", point.id);
             feature.set("name", point.name);
             feature.set("coordinates", point.coordinates);
+            feature.set("baseStyle", style);
             feature.setStyle(style);
 
             return feature;
@@ -878,9 +1179,15 @@
             feature => feature.get("id") === locationId
         );
         const pointStyle = pointFeature?.getStyle();
-        const marker = pointStyle instanceof Style ? pointStyle.getImage() : null;
+        const effectivePointStyle = pointStyle instanceof Style
+            ? pointStyle
+            : pointFeature?.get("baseStyle");
+        const marker = effectivePointStyle instanceof Style
+            ? effectivePointStyle.getImage()
+            : null;
 
         if (marker instanceof Icon) {
+            pointFeature?.setStyle(effectivePointStyle);
             const isAirport = locationId.includes("airport");
             marker.setSrc(
                 selected
@@ -893,15 +1200,19 @@
         const labelFeature = layers.label.getSource()?.getFeatures().find(
             feature => feature.get("id") === locationId
         );
-        const labelStyle = labelFeature.getStyle();
-        const text = labelStyle.getText();
+        const currentLabelStyle = labelFeature?.getStyle();
+        const labelStyle = currentLabelStyle instanceof Style
+            ? currentLabelStyle
+            : labelFeature?.get("baseStyle");
+        const text = labelStyle instanceof Style ? labelStyle.getText() : null;
 
         if (text) {
+            labelFeature?.setStyle(labelStyle);
             text.setScale(selected ? 1.3 : 1.0);
             text.setOffsetX(selected ? 21.5 : 18.5);
             text.setOffsetY(selected ? -21.5 : -18.5);
         }
-        labelFeature.changed();
+        labelFeature?.changed();
         layers.point.changed();
         layers.label.changed();
     }
@@ -915,7 +1226,7 @@
     railwayMarkers.setVisible(true);
     railwayLabels.setVisible(true);
     airportMarkers.setVisible(false);
-    airportMarkers.setVisible(false);
+    airportLabels.setVisible(false);
 
     function changeVisibility(type: 'railway' | 'airport'): void {
         railwayVisibility.value = type === 'railway' ? true : false;
@@ -925,6 +1236,7 @@
         railwayLabels.setVisible(railwayVisibility.value);
         railwayCrimeMarkerLayers?.point.setVisible(railwayVisibility.value);
         railwayCrimeMarkerLayers?.label.setVisible(railwayVisibility.value);
+        updateRailwayClusters();
         if (!railwayVisibility.value && nearbyLocation.value?.id.includes("railway")) {
             nearbyLocation.value = null;
         }
@@ -949,6 +1261,17 @@
 
     onMounted(async () => {
         const alldata = await getData();
+        locationCrimeCounts.value = Object.fromEntries(
+            [...railwayList.value, ...airportList.value].map(location => [
+                location.id,
+                alldata.reduce(
+                    (total, crime) => total + (
+                        location.id.includes(crime.location_id) ? crime.count : 0
+                    ),
+                    0
+                )
+            ])
+        );
         const weaponData = alldata.filter(point => point.icon_id === 0);
         const drugData = alldata.filter(point => point.icon_id === 1);
         const fistData = alldata.filter(point => point.icon_id === 3);
@@ -1017,7 +1340,8 @@
                 railwayCrimeMarkers.point,
                 railwayCrimeMarkers.label,
                 airportCrimeMarkers.point,
-                airportCrimeMarkers.label
+                airportCrimeMarkers.label,
+                railwayClusterLayer
             ],
             view: new View({
                 center: fromLonLat([66.3, 48.5]),
@@ -1040,12 +1364,119 @@
                 : railwayCrimeMarkers;
             setLocationSelected(selectedLayers, selectedLocationId, false);
             selectedLocationId = null;
+            updateRailwayClusters();
         };
+
+        updateRailwayClusters = () => {
+            const clusteredIds = new Set<string>();
+            const clusterGroups: { locations: Location[], pixels: number[][] }[] = [];
+
+            if (railwayVisibility.value) {
+                const mapSize = map!.getSize();
+                if (mapSize) {
+                    const candidates = railwayList.value.flatMap(location => {
+                        if (location.id === selectedLocationId) return [];
+
+                        const pixel = map!.getPixelFromCoordinate(
+                            fromLonLat([
+                                location.coordinates.lng,
+                                location.coordinates.lat
+                            ])
+                        );
+
+                        if (
+                            !pixel ||
+                            pixel[0] < -40 ||
+                            pixel[1] < -40 ||
+                            pixel[0] > mapSize[0] + 40 ||
+                            pixel[1] > mapSize[1] + 40
+                        ) {
+                            return [];
+                        }
+
+                        return [{ location, pixel }];
+                    });
+                    const visited = new Set<string>();
+                    const clusterDistance = 40;
+
+                    for (const candidate of candidates) {
+                        if (visited.has(candidate.location.id)) continue;
+
+                        const group = [candidate];
+                        visited.add(candidate.location.id);
+
+                        for (let index = 0; index < group.length; index += 1) {
+                            const current = group[index];
+
+                            for (const other of candidates) {
+                                if (visited.has(other.location.id)) continue;
+
+                                if (
+                                    Math.hypot(
+                                        current.pixel[0] - other.pixel[0],
+                                        current.pixel[1] - other.pixel[1]
+                                    ) <= clusterDistance
+                                ) {
+                                    group.push(other);
+                                    visited.add(other.location.id);
+                                }
+                            }
+                        }
+
+                        if (group.length > 1) {
+                            const locations = group.map(item => item.location);
+                            const pixels = group.map(item => item.pixel);
+                            locations.forEach(location => clusteredIds.add(location.id));
+                            clusterGroups.push({ locations, pixels });
+                        }
+                    }
+                }
+            }
+
+            [
+                railwayMarkers,
+                railwayLabels,
+                railwayCrimeMarkers.point,
+                railwayCrimeMarkers.label
+            ].forEach(layer => {
+                layer.getSource()?.getFeatures().forEach(feature => {
+                    const locationId = feature.get('id');
+                    if (typeof locationId !== 'string') return;
+
+                    feature.setStyle(
+                        clusteredIds.has(locationId) ? [] : feature.get('baseStyle')
+                    );
+                });
+                layer.changed();
+            });
+
+            railwayClusterSource.clear();
+            const clusterFeatures: Feature[] = [];
+            clusterGroups.forEach(({ locations, pixels }) => {
+                const centerPixel = pixels.reduce<[number, number]>(
+                    (center, pixel) => [
+                        center[0] + pixel[0] / pixels.length,
+                        center[1] + pixel[1] / pixels.length
+                    ],
+                    [0, 0]
+                );
+                const coordinate = map!.getCoordinateFromPixel(centerPixel);
+                if (!coordinate) return;
+
+                const cluster = new Feature({ geometry: new Point(coordinate) });
+                cluster.set('locationIds', locations.map(location => location.id));
+                cluster.set('count', locations.length);
+                clusterFeatures.push(cluster);
+            });
+            railwayClusterSource.addFeatures(clusterFeatures);
+        };
+        updateRailwayClusters();
 
         map.on('click', (event) => {
             const feature = map?.forEachFeatureAtPixel(
                 event.pixel,
                 (candidate, layer) => {
+                    if (layer === railwayClusterLayer) return candidate;
                     if (
                         layer === railwayCrimeMarkers.point ||
                         layer === railwayCrimeMarkers.label ||
@@ -1057,6 +1488,30 @@
                 }, { hitTolerance: 1 }
             );
 
+            const locationIds = feature?.get('locationIds');
+            if (Array.isArray(locationIds)) {
+                const locations = railwayList.value.filter(location =>
+                    locationIds.includes(location.id)
+                );
+                const bounds = map!.getTargetElement().getBoundingClientRect();
+                const x = bounds.left + event.pixel[0] - 360;
+                const y = bounds.top + event.pixel[1] - 120;
+                const horizontalPadding = Math.min(168, window.innerWidth / 2);
+
+                clusteredRailwayMenu.value = {
+                    locations,
+                    x: Math.min(
+                        Math.max(x, horizontalPadding),
+                        Math.max(window.innerWidth - horizontalPadding, horizontalPadding)
+                    ),
+                    y: Math.min(y, Math.max(window.innerHeight - 120, 8))
+                };
+                closeCrimePanel();
+                closeLocationList();
+                return;
+            }
+
+            clusteredRailwayMenu.value = null;
             if (!feature) {
                 closeCrimePanel();
                 closeLocationList();
@@ -1130,7 +1585,14 @@
             selectedCrimes.value = alldata.filter(crime =>
                 locationId.includes(crime.location_id)
             );
+            updateRailwayClusters();
         }
+
+        selectRailwayFromCluster = (location) => {
+            clusteredRailwayMenu.value = null;
+            goToLocation(location.coordinates.lng, location.coordinates.lat);
+            openCrimePanelForLocation(location.id, location.name);
+        };
 
         openNearbyLocationCrimePanel = () => {
             const location = nearbyLocation.value;
@@ -1196,8 +1658,16 @@
             nearbyLocation.value = nearest;
         }
 
-        map.on('moveend', updateNearbyLocation);
-        map.getView().on('change:resolution', updateNearbyLocation);
+        map.on('moveend', () => {
+            clusteredRailwayMenu.value = null;
+            updateRailwayClusters();
+            updateNearbyLocation();
+        });
+        map.getView().on('change:resolution', () => {
+            clusteredRailwayMenu.value = null;
+            updateRailwayClusters();
+            updateNearbyLocation();
+        });
 
         map.on('pointermove', (event) => {
             let isLocationMarker = false;
@@ -1207,6 +1677,18 @@
             map?.forEachFeatureAtPixel(
                 event.pixel,
                 (feature, layer) => {
+                    if (layer === railwayClusterLayer) {
+                        isLocationMarker = true;
+                        const count = feature.get('count');
+                        locationAtPointer = {
+                            id: 'railway-cluster',
+                            name: typeof count === 'number'
+                                ? `${count} ЖД вокзала`
+                                : 'Вокзалы'
+                        };
+                        return true;
+                    }
+
                     if (layer === railwayCrimeMarkers.point ||
                         layer === railwayCrimeMarkers.label ||
                         layer === airportCrimeMarkers.point ||
